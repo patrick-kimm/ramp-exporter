@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ramp Exporter — Local</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --panel: #141417;
+    --panel-2: #1a1a1e;
+    --line: #26262c;
+    --line-bright: #3a3a44;
+    --text: #ededee;
+    --muted: #8b8b93;
+    --faint: #5a5a63;
+    --gold: #d4af6a;
+    --gold-bright: #ecc984;
+    --ok: #5fd38d;
+    --err: #ff6f6f;
+    --steel: #9bb6cc;
+    --serif: "Instrument Serif", Georgia, serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(900px 500px at 78% -10%, rgba(212,175,106,0.10), transparent 60%),
+      radial-gradient(700px 600px at -5% 5%, rgba(155,182,204,0.05), transparent 55%);
+    background-attachment: fixed;
+  }
+  /* grain */
+  .grain {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  main { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 48px 28px 96px; }
+
+  /* header */
+  header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 40px; }
+  .brand .eyebrow { font-size: 11px; letter-spacing: 0.42em; text-transform: uppercase; color: var(--gold); margin: 0 0 6px; }
+  .brand h1 { font-family: var(--serif); font-weight: 400; font-size: 58px; line-height: 0.92; margin: 0; letter-spacing: 0.005em; }
+  .brand h1 em { font-style: italic; color: var(--gold-bright); }
+  .brand .sub { color: var(--muted); margin: 12px 0 0; max-width: 46ch; }
+  .badge {
+    flex: none; display: inline-flex; align-items: center; gap: 9px; padding: 9px 14px;
+    border: 1px solid var(--line-bright); border-radius: 2px; background: rgba(95,211,141,0.04);
+    font-size: 11px; letter-spacing: 0.06em; color: var(--text); white-space: nowrap;
+  }
+  .badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 0 rgba(95,211,141,0.6); animation: pulse 2.6s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(95,211,141,0.5);} 70% { box-shadow: 0 0 0 7px rgba(95,211,141,0);} 100% { box-shadow: 0 0 0 0 rgba(95,211,141,0);} }
+  .badge small { display: block; color: var(--muted); font-size: 10px; letter-spacing: 0.02em; }
+
+  /* panel */
+  .panel { border: 1px solid var(--line); background: linear-gradient(180deg, var(--panel), #111114); border-radius: 4px; }
+  .panel + .panel { margin-top: 22px; }
+  .panel-head { display: flex; align-items: baseline; gap: 12px; padding: 18px 22px; border-bottom: 1px solid var(--line); }
+  .panel-head h2 { font-family: var(--serif); font-weight: 400; font-size: 24px; margin: 0; }
+  .panel-head .idx { color: var(--gold); font-size: 12px; letter-spacing: 0.2em; }
+  .panel-body { padding: 22px; }
+
+  /* form */
+  .field { margin-bottom: 18px; }
+  label.lbl { display: block; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
+  input[type=text], input[type=password], input[type=date] {
+    width: 100%; padding: 12px 14px; background: #0d0d0f; color: var(--text);
+    border: 1px solid var(--line-bright); border-radius: 3px; font-family: var(--mono); font-size: 14px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  input::placeholder { color: var(--faint); }
+  input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212,175,106,0.12); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 620px) { .two { grid-template-columns: 1fr; } header { flex-direction: column; } .brand h1 { font-size: 46px; } }
+
+  /* chips */
+  .chips { display: flex; gap: 10px; flex-wrap: wrap; }
+  .chip { cursor: pointer; user-select: none; padding: 9px 16px; border: 1px solid var(--line-bright); border-radius: 2px; color: var(--muted); transition: all .15s; font-size: 13px; letter-spacing: 0.02em; }
+  .chip[aria-pressed=true] { color: var(--bg); background: var(--gold); border-color: var(--gold); font-weight: 500; }
+  .chip:hover { border-color: var(--gold); color: var(--text); }
+  .chip[aria-pressed=true]:hover { color: var(--bg); }
+
+  details.adv { margin-top: 4px; }
+  details.adv > summary { cursor: pointer; color: var(--muted); font-size: 12px; letter-spacing: 0.08em; list-style: none; }
+  details.adv > summary::-webkit-details-marker { display: none; }
+  details.adv > summary::before { content: "›"; display: inline-block; margin-right: 8px; transition: transform .2s; color: var(--gold); }
+  details.adv[open] > summary::before { transform: rotate(90deg); }
+  .adv-body { padding-top: 16px; }
+
+  .run-row { display: flex; align-items: center; gap: 18px; margin-top: 24px; }
+  button.run {
+    font-family: var(--mono); font-weight: 600; font-size: 14px; letter-spacing: 0.06em;
+    padding: 14px 30px; border: none; border-radius: 3px; cursor: pointer; color: #100d06;
+    background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+    transition: transform .12s, box-shadow .2s, filter .2s; position: relative; overflow: hidden;
+  }
+  button.run:hover { box-shadow: 0 8px 30px -10px rgba(212,175,106,0.6); transform: translateY(-1px); }
+  button.run:active { transform: translateY(0); }
+  button.run:disabled { filter: grayscale(0.6) brightness(0.7); cursor: progress; }
+  button.run.loading::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.45) 50%, transparent 80%); transform: translateX(-100%); animation: sweep 1.1s infinite; }
+  @keyframes sweep { to { transform: translateX(100%); } }
+  .lock-note { color: var(--faint); font-size: 11.5px; max-width: 38ch; }
+  .lock-note b { color: var(--muted); font-weight: 500; }
+
+  /* status log */
+  #status .panel-body { font-size: 13px; }
+  .logline { display: flex; align-items: center; gap: 12px; padding: 5px 0; color: var(--muted); opacity: 0; animation: fadeup .4s forwards; }
+  .logline .tick { color: var(--ok); }
+  .logline.cur { color: var(--text); }
+  .logline.cur .tick { color: var(--gold); animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0.3; } }
+
+  /* results */
+  .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px,1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+  .stat { background: var(--panel-2); padding: 16px 18px; }
+  .stat .n { font-family: var(--serif); font-size: 34px; line-height: 1; }
+  .stat .n.zero { color: var(--faint); }
+  .stat .k { font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-top: 8px; }
+  .pathbar { display: flex; align-items: center; gap: 12px; margin-top: 18px; padding: 12px 16px; background: #0d0d0f; border: 1px solid var(--line); border-radius: 3px; }
+  .pathbar .pk { color: var(--gold); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; flex: none; }
+  .pathbar code { color: var(--steel); font-size: 12.5px; word-break: break-all; }
+  .copybtn { margin-left: auto; flex: none; background: transparent; border: 1px solid var(--line-bright); color: var(--muted); padding: 5px 11px; border-radius: 2px; cursor: pointer; font-family: var(--mono); font-size: 11px; }
+  .copybtn:hover { color: var(--text); border-color: var(--gold); }
+
+  /* tabs */
+  .tabs { display: flex; gap: 2px; flex-wrap: wrap; border-bottom: 1px solid var(--line); margin: 26px 0 0; }
+  .tab { position: relative; cursor: pointer; padding: 11px 16px 13px; color: var(--muted); font-size: 12.5px; letter-spacing: 0.04em; border: none; background: none; font-family: var(--mono); }
+  .tab .cnt { color: var(--faint); margin-left: 7px; font-size: 11px; }
+  .tab[aria-selected=true] { color: var(--text); }
+  .tab[aria-selected=true]::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 2px; background: var(--gold); }
+  .tab:hover { color: var(--text); }
+  .tab.empty { color: var(--faint); }
+
+  .tabpanel { padding-top: 20px; }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 3px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  thead th { text-align: left; padding: 11px 14px; color: var(--gold); font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; font-size: 10.5px; border-bottom: 1px solid var(--line); background: #0e0e10; white-space: nowrap; }
+  tbody td { padding: 10px 14px; border-bottom: 1px solid #1c1c21; color: var(--text); vertical-align: top; white-space: nowrap; max-width: 320px; overflow: hidden; text-overflow: ellipsis; }
+  tbody tr:hover { background: rgba(212,175,106,0.04); }
+  tbody td .nul { color: var(--faint); }
+  tbody td .obj { color: var(--steel); cursor: pointer; }
+  td.exp { width: 24px; text-align: center; color: var(--gold); cursor: pointer; user-select: none; }
+  tr.raw td { background: #0c0c0e; }
+  tr.raw pre { margin: 0; padding: 14px 16px; color: var(--steel); font-size: 11.5px; white-space: pre-wrap; word-break: break-word; max-height: 360px; overflow: auto; }
+  .empty-state { padding: 44px; text-align: center; color: var(--faint); border: 1px dashed var(--line-bright); border-radius: 3px; }
+  .empty-state .big { font-family: var(--serif); font-size: 28px; color: var(--muted); display: block; margin-bottom: 6px; }
+
+  /* error */
+  #error .panel-body { color: var(--err); }
+  #error .msg { background: rgba(255,111,111,0.06); border: 1px solid rgba(255,111,111,0.3); border-radius: 3px; padding: 16px; color: #ffb3b3; font-size: 13px; }
+  #error .tip { color: var(--muted); margin-top: 14px; font-size: 12.5px; }
+
+  [hidden] { display: none !important; }
+  .reveal { animation: fadeup .5s both; }
+  @keyframes fadeup { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  footer { margin-top: 56px; color: var(--faint); font-size: 11px; letter-spacing: 0.04em; text-align: center; }
+  footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<main>
+  <header>
+    <div class="brand">
+      <p class="eyebrow">Migration · Ramp</p>
+      <h1>Ramp <em>Exporter</em></h1>
+      <p class="sub">Export your Ramp account into neutral files. Runs entirely on this machine — your credentials are used in memory and never sent anywhere but Ramp.</p>
+    </div>
+    <div class="badge">
+      <span class="dot"></span>
+      <span>LOCAL ONLY<small>creds stay on this device</small></span>
+    </div>
+  </header>
+
+  <section class="panel reveal" id="form-panel">
+    <div class="panel-head"><span class="idx">01</span><h2>Connect</h2></div>
+    <div class="panel-body">
+      <div class="two">
+        <div class="field">
+          <label class="lbl" for="cid">Client ID</label>
+          <input id="cid" type="text" autocomplete="off" spellcheck="false" placeholder="ramp_id_…" />
+        </div>
+        <div class="field">
+          <label class="lbl" for="csec">Client Secret</label>
+          <input id="csec" type="password" autocomplete="off" spellcheck="false" placeholder="ramp_sec_…" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="lbl">Categories</label>
+        <div class="chips" id="chips">
+          <span class="chip" role="button" tabindex="0" aria-pressed="true" data-cat="users">Users</span>
+          <span class="chip" role="button" tabindex="0" aria-pressed="true" data-cat="cards">Cards</span>
+          <span class="chip" role="button" tabindex="0" aria-pressed="true" data-cat="vendors">Vendors</span>
+        </div>
+      </div>
+      <details class="adv">
+        <summary>Vendor ledger window (advanced)</summary>
+        <div class="adv-body two">
+          <div class="field"><label class="lbl" for="from">From</label><input id="from" type="date" /></div>
+          <div class="field"><label class="lbl" for="to">To</label><input id="to" type="date" /></div>
+        </div>
+      </details>
+      <div class="run-row">
+        <button class="run" id="run">Run export →</button>
+        <span class="lock-note"><b>Nothing is stored.</b> The export also writes the same files to a local folder you control.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="status" hidden>
+    <div class="panel-head"><span class="idx">··</span><h2>Working</h2></div>
+    <div class="panel-body" id="loglines"></div>
+  </section>
+
+  <section class="panel" id="error" hidden>
+    <div class="panel-head"><span class="idx">!!</span><h2>Couldn’t export</h2></div>
+    <div class="panel-body">
+      <div class="msg" id="errmsg"></div>
+      <div class="tip" id="errtip"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="results" hidden>
+    <div class="panel-head"><span class="idx">02</span><h2>What we found</h2></div>
+    <div class="panel-body">
+      <div class="stats" id="stats"></div>
+      <div class="pathbar"><span class="pk">Bundle</span><code id="bundlepath"></code><button class="copybtn" id="copy">copy</button></div>
+      <div class="tabs" id="tabs"></div>
+      <div class="tabpanel" id="tabpanel"></div>
+    </div>
+  </section>
+
+  <footer>ramp-exporter · open source · runs locally · <a href="https://github.com/yourorg/ramp-exporter">source</a></footer>
+</main>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const RESOURCE_ORDER = ["users","departments","locations","cards","limits","spend-programs","vendors","bills","transactions"];
+const COL_PRIORITY = ["id","name","display_name","first_name","last_name","email","role","status","state","last_four","amount","vendor_id","cardholder_id","department_id","location_id","payment_method","created_at"];
+
+// default date window: last 90 days
+(function initDates(){
+  const fmt = (d) => d.toISOString().slice(0,10);
+  const now = new Date(); const past = new Date(now.getTime() - 90*864e5);
+  $("#to").value = fmt(now); $("#from").value = fmt(past);
+})();
+
+// chips
+$("#chips").addEventListener("click", (e) => {
+  const c = e.target.closest(".chip"); if (!c) return;
+  c.setAttribute("aria-pressed", c.getAttribute("aria-pressed") === "true" ? "false" : "true");
+});
+$("#chips").addEventListener("keydown", (e) => {
+  if ((e.key === " " || e.key === "Enter") && e.target.classList.contains("chip")) { e.preventDefault(); e.target.click(); }
+});
+
+const STEPS = ["authenticating with ramp", "fetching records", "writing bundle", "summarizing"];
+let logTimer = null;
+function startLog() {
+  const box = $("#loglines"); box.innerHTML = ""; let i = 0;
+  const draw = () => {
+    box.innerHTML = STEPS.map((s, idx) => {
+      const done = idx < i, cur = idx === i;
+      return '<div class="logline ' + (cur ? "cur" : "") + '" style="animation-delay:' + (idx*60) + 'ms"><span class="tick">' + (done ? "✓" : cur ? "▸" : "·") + '</span><span>' + s + (cur ? "…" : "") + '</span></div>';
+    }).join("");
+  };
+  draw();
+  logTimer = setInterval(() => { if (i < STEPS.length - 1) { i++; draw(); } }, 850);
+}
+function stopLog(){ clearInterval(logTimer); }
+
+$("#run").addEventListener("click", run);
+async function run() {
+  const clientId = $("#cid").value.trim();
+  const clientSecret = $("#csec").value.trim();
+  const categories = [...document.querySelectorAll('.chip[aria-pressed=true]')].map(c => c.dataset.cat);
+  if (!clientId || !clientSecret) return flashError("Enter both your Client ID and Client Secret.", "These come from your Ramp app under Settings → Developer.");
+  if (!categories.length) return flashError("Pick at least one category to export.", "");
+
+  const btn = $("#run"); btn.disabled = true; btn.classList.add("loading"); btn.textContent = "Exporting…";
+  $("#error").hidden = true; $("#results").hidden = true;
+  $("#status").hidden = false; $("#status").classList.add("reveal"); startLog();
+
+  try {
+    const res = await fetch("/api/export", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ clientId, clientSecret, categories, dateRange: { from: $("#from").value, to: $("#to").value } })
+    });
+    const data = await res.json();
+    stopLog(); $("#status").hidden = true;
+    if (!data.ok) return flashError(data.error || "Export failed.", hintFor(data.error || ""));
+    render(data);
+  } catch (err) {
+    stopLog(); $("#status").hidden = true;
+    flashError("Couldn’t reach the local exporter (" + err.message + ").", "Is the `ramp-exporter ui` process still running?");
+  } finally {
+    btn.disabled = false; btn.classList.remove("loading"); btn.textContent = "Run export →";
+  }
+}
+
+function hintFor(msg) {
+  if (/not allowed for this client|scope/i.test(msg)) return "Your Ramp app is missing a scope. Enable the read scopes (users:read, cards:read, limits:read, vendors:read, …) under Settings → Developer.";
+  if (/auth failed|401|invalid_client/i.test(msg)) return "Double-check the Client ID / Secret — they’re for a Client-Credentials app.";
+  if (/datetime|422/i.test(msg)) return "A date filter was rejected by Ramp.";
+  return "";
+}
+function flashError(msg, tip) {
+  $("#errmsg").textContent = msg; $("#errtip").textContent = tip || "";
+  const e = $("#error"); e.hidden = false; e.classList.remove("reveal"); void e.offsetWidth; e.classList.add("reveal");
+}
+
+let TABS = [];
+function render(data) {
+  const counts = data.counts || {};
+  const present = RESOURCE_ORDER.filter(r => r in (data.resources || {}));
+  // stats
+  $("#stats").innerHTML = present.map(r => {
+    const n = counts[r] ?? (data.resources[r] || []).length;
+    return '<div class="stat"><div class="n ' + (n === 0 ? "zero" : "") + '">' + n + '</div><div class="k">' + label(r) + '</div></div>';
+  }).join("");
+  // path
+  $("#bundlepath").textContent = data.bundleDir || "";
+  $("#copy").onclick = () => { navigator.clipboard?.writeText(data.bundleDir || ""); $("#copy").textContent = "copied"; setTimeout(() => $("#copy").textContent = "copy", 1400); };
+  // tabs
+  TABS = present;
+  $("#tabs").innerHTML = present.map((r, i) => {
+    const n = counts[r] ?? (data.resources[r] || []).length;
+    return '<button class="tab ' + (n===0?"empty":"") + '" role="tab" aria-selected="' + (i===0) + '" data-r="' + r + '">' + label(r) + '<span class="cnt">' + n + '</span></button>';
+  }).join("");
+  $("#tabs").querySelectorAll(".tab").forEach(t => t.onclick = () => selectTab(t.dataset.r, data));
+  if (present.length) selectTab(present[0], data);
+  const R = $("#results"); R.hidden = false; R.classList.remove("reveal"); void R.offsetWidth; R.classList.add("reveal");
+  R.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function selectTab(r, data) {
+  $("#tabs").querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.r === r));
+  $("#tabpanel").innerHTML = renderTable(data.resources[r] || []);
+  $("#tabpanel").querySelectorAll("td.exp").forEach(td => td.onclick = () => {
+    const tr = td.closest("tr"), raw = tr.nextElementSibling;
+    const open = raw.hasAttribute("hidden"); raw.toggleAttribute("hidden", !open); td.textContent = open ? "▾" : "▸";
+  });
+}
+
+function renderTable(rows) {
+  if (!rows.length) return '<div class="empty-state"><span class="big">Nothing here</span>No records returned for this resource.</div>';
+  // columns: primitive keys, priority-ordered, capped
+  const prim = new Set();
+  for (const row of rows) for (const k in row) { const v = row[k]; if (v === null || ["string","number","boolean"].includes(typeof v)) prim.add(k); }
+  let cols = COL_PRIORITY.filter(k => prim.has(k));
+  for (const k of [...prim].sort()) if (!cols.includes(k)) cols.push(k);
+  cols = cols.slice(0, 7);
+  const head = "<th class='exp'></th>" + cols.map(c => "<th>" + label(c) + "</th>").join("");
+  const body = rows.map(row => {
+    const cells = cols.map(c => "<td>" + cell(row[c]) + "</td>").join("");
+    const raw = "<tr class='raw' hidden><td colspan='" + (cols.length+1) + "'><pre>" + esc(JSON.stringify(row, null, 2)) + "</pre></td></tr>";
+    return "<tr><td class='exp'>▸</td>" + cells + "</tr>" + raw;
+  }).join("");
+  return "<div class='tablewrap'><table><thead><tr>" + head + "</tr></thead><tbody>" + body + "</tbody></table></div>";
+}
+
+function cell(v) {
+  if (v === null || v === undefined) return "<span class='nul'>—</span>";
+  if (typeof v === "object") return "<span class='obj'>" + (Array.isArray(v) ? "["+v.length+"]" : "{…}") + "</span>";
+  return esc(String(v));
+}
+function label(s){ return String(s).replace(/[_-]/g," ").replace(/\b\w/g, m => m.toUpperCase()); }
+function esc(s){ return s.replace(/[&<>]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[m])); }
+</script>
+</body>
+</html>

@@ -7,6 +7,8 @@ import { fetchResource, resourcesForCategories } from "./ramp/resources";
 export interface ExportResult {
   bundleDir: string;
   manifest: Manifest;
+  /** Populated only when collectRecords is set (e.g. for the local UI). */
+  records?: Record<string, unknown[]>;
 }
 
 export interface RunExportOptions {
@@ -17,6 +19,8 @@ export interface RunExportOptions {
   clientFactory?: () => RampClient;
   log?: (msg: string) => void;
   exporterVersion?: string;
+  /** Keep fetched records in memory and return them (the UI renders these). Off by default to keep the CLI lean. */
+  collectRecords?: boolean;
 }
 
 /**
@@ -50,10 +54,12 @@ export async function runExport(opts: RunExportOptions): Promise<ExportResult> {
   await bundle.init();
   log(`bundle: ${bundle.bundleDir}`);
 
+  const collected: Record<string, unknown[]> | undefined = opts.collectRecords ? {} : undefined;
   for (const name of resourceNames) {
     log(`fetching ${name}…`);
     const records = await fetchResource(client, name, opts.config.export.filters.date_range);
     const meta = await bundle.writeResource(name, records);
+    if (collected) collected[name] = records;
     log(`  ${name}: ${meta.row_count} records`);
   }
 
@@ -73,5 +79,5 @@ export async function runExport(opts: RunExportOptions): Promise<ExportResult> {
   await bundle.writeSuccess();
   log(`done: ${bundle.bundleDir}`);
 
-  return { bundleDir: bundle.bundleDir, manifest };
+  return { bundleDir: bundle.bundleDir, manifest, records: collected };
 }

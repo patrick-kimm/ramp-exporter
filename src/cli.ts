@@ -8,6 +8,7 @@ const VERSION = "0.1.0";
 const USAGE = `ramp-exporter ${VERSION}
 
 usage:
+  ramp-exporter ui [--port 4747]                  open the local web UI
   ramp-exporter export <users|cards|vendors|all> [--config config.yml]
   ramp-exporter validate <bundle-dir>
   ramp-exporter version
@@ -79,6 +80,23 @@ async function main(): Promise<void> {
         for (const e of result.errors) console.error(`  - ${e}`);
         process.exit(1);
       }
+      break;
+    }
+
+    case "ui": {
+      const { startUiServer } = await import("./ui/server");
+      const port = Number(flags.port ?? "4747");
+      const { url } = startUiServer({ port: Number.isFinite(port) ? port : 4747 });
+      console.error(`ramp-exporter ui → ${url}`);
+      console.error("Paste your Ramp credentials in the browser. Everything runs locally; nothing is stored.");
+      try {
+        const opener =
+          process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
+        Bun.spawn([opener, url]);
+      } catch {
+        // browser auto-open is best-effort
+      }
+      await new Promise(() => {}); // keep the server alive until Ctrl-C
       break;
     }
 
