@@ -11,19 +11,21 @@ source:
     - users:read
     - departments:read
     - locations:read
+    - entities:read
     - cards:read
     - limits:read
     - spend_programs:read
+    - funds:read
     - vendors:read
     - bills:read
     - transactions:read
-  # NOTE: exact scope slugs must be verified against Ramp's scopes page before lock.
+  # Scope slugs verified against Ramp's OpenAPI (see docs/ramp-api-notes.md).
 
 export:
   # Categories to export. Each expands to a set of raw Ramp resources (raw-faithful, JSONL).
   categories:
-    - users                    # -> users, departments, locations
-    - cards                    # -> cards, spend_limits, spend_programs
+    - users                    # -> users, departments, locations, entities
+    - cards                    # -> cards, limits, spend-programs, funds
     - vendors                  # -> vendors + bills/transactions METADATA (no receipt binaries)
   mode: full                   # full snapshots only — no incremental in v1
   filters:

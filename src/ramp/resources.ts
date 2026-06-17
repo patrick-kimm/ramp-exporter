@@ -18,9 +18,11 @@ export const RESOURCES: Record<string, ResourceDef> = {
   users: { path: "/users", scope: "users:read" },
   departments: { path: "/departments", scope: "departments:read" },
   locations: { path: "/locations", scope: "locations:read" },
+  entities: { path: "/entities", scope: "entities:read" }, // referenced everywhere via entity_id
   cards: { path: "/cards", scope: "cards:read" },
   limits: { path: "/limits", scope: "limits:read" }, // Ramp "spend limits"
   "spend-programs": { path: "/spend-programs", scope: "spend_programs:read" },
+  funds: { path: "/funds", scope: "funds:read" }, // virtual-account / subaccount buckets (balance, members, cards[])
   vendors: { path: "/vendors", scope: "vendors:read" }, // bill-pay vendors (has bank accounts, masked)
   bills: {
     path: "/bills",
@@ -36,12 +38,11 @@ export const RESOURCES: Record<string, ResourceDef> = {
 
 /** Which raw resources each export category pulls. */
 export const CATEGORY_RESOURCES: Record<Category, string[]> = {
-  users: ["users", "departments", "locations"],
-  cards: ["cards", "limits", "spend-programs"],
+  users: ["users", "departments", "locations", "entities"],
+  cards: ["cards", "limits", "spend-programs", "funds"],
   vendors: ["vendors", "bills", "transactions"],
 };
 
-/** Collect every record of a resource (raw-faithful, full snapshot). */
 /** Ramp's date filters require a full ISO-8601 datetime, not a bare YYYY-MM-DD (returns 422 otherwise). */
 export function toRampDatetime(value: string, bound: "start" | "end"): string {
   if (value.includes("T")) return value; // already a datetime — pass through
@@ -51,6 +52,7 @@ export function toRampDatetime(value: string, bound: "start" | "end"): string {
   return value; // unrecognized; let Ramp validate
 }
 
+/** Collect every record of a resource (raw-faithful, full snapshot). */
 export async function fetchResource(
   client: RampClient,
   name: string,

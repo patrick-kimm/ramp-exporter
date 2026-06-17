@@ -15,7 +15,7 @@ const fastClient = (apiBase: string) =>
 function cfg(out: string, apiBase: string): Config {
   return {
     format_version: "1.0",
-    source: { api_base: apiBase, scopes: ["cards:read", "limits:read", "spend_programs:read"] },
+    source: { api_base: apiBase, scopes: ["cards:read", "limits:read", "spend_programs:read", "funds:read"] },
     export: { categories: ["cards"], mode: "full", filters: {} },
     output: { backend: "local", path: out },
     runtime: { rate_limit_rps: 1000, max_retries: 3, log_format: "text" },
@@ -38,9 +38,19 @@ describe("export cards category (end-to-end)", () => {
       },
     ];
     const programs = [{ id: "sp1", display_name: "T&E" }];
+    // A Fund = virtual-account bucket; its cards[] is how a card's bucket is discovered.
+    const funds = [
+      {
+        id: "f1",
+        display_name: "Marketing",
+        balance: { total: { amount: 100000, currency_code: "USD" } },
+        cards: [{ card_id: "c1" }],
+        members: [{ user_id: "u1" }],
+      },
+    ];
 
     const mock = startMockRamp({
-      resources: { cards, limits, "spend-programs": programs },
+      resources: { cards, limits, "spend-programs": programs, funds },
       pageSize: 50,
     });
     const out = await mkdtemp(join(tmpdir(), "ramp-cards-"));
@@ -52,7 +62,7 @@ describe("export cards category (end-to-end)", () => {
         clientFactory: () => fastClient(mock.url),
       });
 
-      expect(manifest.counts_summary).toEqual({ cards: 2, limits: 1, "spend-programs": 1 });
+      expect(manifest.counts_summary).toEqual({ cards: 2, limits: 1, "spend-programs": 1, funds: 1 });
       expect(manifest.resources["spend-programs"]!.file).toBe("spend-programs.jsonl");
 
       // raw-faithful + masked: the record is byte-identical, PAN never present

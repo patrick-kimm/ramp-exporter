@@ -26,6 +26,7 @@ describe("ui server", () => {
         users: [{ id: "u1", department_id: "d1" }, { id: "u2", department_id: "d2" }],
         departments: [{ id: "d1", name: "Eng" }, { id: "d2", name: "Ops" }],
         locations: [],
+        entities: [],
       },
       pageSize: 50,
     });

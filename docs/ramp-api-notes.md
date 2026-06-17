@@ -20,9 +20,11 @@ exporter codes against — not assumptions.
 | users | `/developer/v1/users` | `users:read` |
 | departments | `/developer/v1/departments` | `departments:read` |
 | locations | `/developer/v1/locations` | `locations:read` |
+| entities | `/developer/v1/entities` | `entities:read` |
 | cards | `/developer/v1/cards` | `cards:read` |
 | spend limits | `/developer/v1/limits` | `limits:read` |
 | spend programs | `/developer/v1/spend-programs` | `spend_programs:read` |
+| funds | `/developer/v1/funds` | `funds:read` |
 | vendors (bill-pay) | `/developer/v1/vendors` | `vendors:read` |
 | vendors (accounting) | `/developer/v1/accounting/vendors` | `accounting:read` |
 | bills | `/developer/v1/bills` | `bills:read` |
@@ -37,6 +39,24 @@ Note: scope slugs use underscores (`spend_programs:read`); some paths use hyphen
 ## Object-shape notes
 - Spend Limit **`balance`** lives on the *detail* resource (`ApiSpendLimitDetailResource`), not necessarily the `/limits` list. v1 captures whatever the list returns; per-limit balance enrichment is a later concern.
 - Card spending restrictions (`amount`, `interval`, `transaction_amount_limit`) are fields on the card/limit — confirms there is **no separate Policy object**.
-- Payment **rail** = `payment_method` on bill payments (`ApiBillPayment`), alongside `amount`. Per-vendor spend rollups derive from bills/transactions (Ramp exposes no native vendor total).
-- `funds:read` is a real scope — "funds" is a distinct Ramp funding concept, separate from a limit's balance. Out of v1.
+- Payment **rail** = `payment_method` on bill payments (`ApiBillPayment`), alongside `amount`. CORRECTION (from live data): the `/vendors` object **does** carry native per-vendor spend totals — `total_spend_ytd` / `_last_30_days` / `_last_365_days` / `_all_time` (each `{amount, minor_unit_conversion_rate, currency_code}`) plus `default_payment_method`. So the Cockpit rollup can read these directly instead of summing the ledger (the earlier "no native vendor total" claim was an OpenAPI-truncation artifact).
 - **Date filters require full ISO-8601 datetimes** (confirmed live 2026-06-17): bare `YYYY-MM-DD` returns `422 DEVELOPER_7001 "Not a valid datetime"`. bills use `from_issued_date`/`to_issued_date`; transactions use `from_date`/`to_date`. The exporter normalizes via `toRampDatetime` (from→`T00:00:00Z`, to→`T23:59:59Z`).
+
+## Card / spend-control model (cards category)
+The card config is a quartet — `cards` + `limits` + `spend-programs` + `funds` — all scoped to an **Entity**:
+
+```
+Entity
+└─ Card  (card_program_id → opaque, NO read endpoint)
+     ├─ cardholder_id → User
+     └─ lives in → Limit  OR  Fund        (discovered via Limit.cards[] / Fund.cards[])
+                      └─ spend_program_id → Spend Program (template)
+                      └─ balance · restrictions · members/users
+Transaction → card_id · limit_id · fund_id · spend_program_id · merchant_id · statement_id · entity_id
+```
+
+- **Fund** (`/funds`, `funds:read`) is structurally identical to a **Limit** — a balance-bearing bucket with `balance` (cleared/pending/total), `members[]`, `cards[]`, `restrictions`, `spend_program_id`. It is Ramp's analog to a **Slash virtual account / subaccount** (the card's "account bucket"). A **named Fund** ↔ a Slash virtual account; a **standalone Limit** (no fund) ↔ the Primary/default bucket. Value-mapping (Fund → Virtual Account) lives downstream in the Cockpit's Mappings.
+- The card→bucket link is **NOT on the Card object** — resolve via `Fund.cards[]` / `Limit.cards[]`, or `Transaction.fund_id` (transactions carry `fund_id`, `limit_id`, `spend_program_id` for per-bucket reconciliation).
+- `card_program_id` (physical/virtual card program) has **no read endpoint** — captured as an opaque id only.
+- **Entities** (`/entities`, `entities:read`): every Card/Limit/Fund/User references `entity_id`; entity has `is_primary`. Exported in the **users** category (org structure).
+- Deferred (v2): `statements` (billing history), `memos` (txn annotations), `merchants` (txn lookup — pair with the ledger), `reimbursements` (separate spend type). Skipped: `cashbacks` (Ramp-proprietary, not portable), `vault/cards` (full PAN).

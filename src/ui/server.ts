@@ -5,8 +5,8 @@ import type { Category } from "../manifest";
 
 const DEFAULT_API_BASE = "https://api.ramp.com/developer/v1";
 const DEFAULT_SCOPES = [
-  "users:read", "departments:read", "locations:read",
-  "cards:read", "limits:read", "spend_programs:read",
+  "users:read", "departments:read", "locations:read", "entities:read",
+  "cards:read", "limits:read", "spend_programs:read", "funds:read",
   "vendors:read", "bills:read", "transactions:read",
 ];
 const VALID_CATEGORIES: Category[] = ["users", "cards", "vendors"];
