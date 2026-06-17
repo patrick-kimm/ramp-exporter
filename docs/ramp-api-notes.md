@@ -39,3 +39,4 @@ Note: scope slugs use underscores (`spend_programs:read`); some paths use hyphen
 - Card spending restrictions (`amount`, `interval`, `transaction_amount_limit`) are fields on the card/limit — confirms there is **no separate Policy object**.
 - Payment **rail** = `payment_method` on bill payments (`ApiBillPayment`), alongside `amount`. Per-vendor spend rollups derive from bills/transactions (Ramp exposes no native vendor total).
 - `funds:read` is a real scope — "funds" is a distinct Ramp funding concept, separate from a limit's balance. Out of v1.
+- **Date filters require full ISO-8601 datetimes** (confirmed live 2026-06-17): bare `YYYY-MM-DD` returns `422 DEVELOPER_7001 "Not a valid datetime"`. bills use `from_issued_date`/`to_issued_date`; transactions use `from_date`/`to_date`. The exporter normalizes via `toRampDatetime` (from→`T00:00:00Z`, to→`T23:59:59Z`).

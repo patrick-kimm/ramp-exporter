@@ -49,15 +49,15 @@ describe("export vendors category (end-to-end)", () => {
       expect(manifest.counts_summary).toEqual({ vendors: 2, bills: 1, transactions: 1 });
       expect(await validateBundle(bundleDir).then((r) => r.ok)).toBe(true);
 
-      // date filter applied to the ledger endpoints (verified param names)...
-      const txnReq = mock.requests.find((r) => r.path.endsWith("/transactions"));
-      expect(txnReq?.search).toContain("from_date=2025-01-01");
-      expect(txnReq?.search).toContain("to_date=2026-01-01");
-      const billReq = mock.requests.find((r) => r.path.endsWith("/bills"));
-      expect(billReq?.search).toContain("from_issued_date=2025-01-01");
+      // date filter applied to the ledger endpoints, normalized to ISO datetimes (Ramp rejects bare dates)...
+      const txnParams = new URLSearchParams(mock.requests.find((r) => r.path.endsWith("/transactions"))!.search);
+      expect(txnParams.get("from_date")).toBe("2025-01-01T00:00:00Z");
+      expect(txnParams.get("to_date")).toBe("2026-01-01T23:59:59Z");
+      const billParams = new URLSearchParams(mock.requests.find((r) => r.path.endsWith("/bills"))!.search);
+      expect(billParams.get("from_issued_date")).toBe("2025-01-01T00:00:00Z");
+      expect(billParams.get("to_issued_date")).toBe("2026-01-01T23:59:59Z");
       // ...but NOT to the vendor master list
-      const vendorReq = mock.requests.find((r) => r.path.endsWith("/vendors"));
-      expect(vendorReq?.search).toBe("");
+      expect(mock.requests.find((r) => r.path.endsWith("/vendors"))!.search).toBe("");
 
       // bank details arrive masked (last four only) — raw-faithful, full number never present
       const v0 = JSON.parse(

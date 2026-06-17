@@ -42,6 +42,15 @@ export const CATEGORY_RESOURCES: Record<Category, string[]> = {
 };
 
 /** Collect every record of a resource (raw-faithful, full snapshot). */
+/** Ramp's date filters require a full ISO-8601 datetime, not a bare YYYY-MM-DD (returns 422 otherwise). */
+export function toRampDatetime(value: string, bound: "start" | "end"): string {
+  if (value.includes("T")) return value; // already a datetime — pass through
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return bound === "start" ? `${value}T00:00:00Z` : `${value}T23:59:59Z`;
+  }
+  return value; // unrecognized; let Ramp validate
+}
+
 export async function fetchResource(
   client: RampClient,
   name: string,
@@ -51,8 +60,8 @@ export async function fetchResource(
   if (!def) throw new Error(`Unknown resource: ${name}`);
   const params: Record<string, string> = {};
   if (def.dateParams && dateRange) {
-    params[def.dateParams.from] = dateRange.from;
-    params[def.dateParams.to] = dateRange.to;
+    params[def.dateParams.from] = toRampDatetime(dateRange.from, "start");
+    params[def.dateParams.to] = toRampDatetime(dateRange.to, "end");
   }
   const records: unknown[] = [];
   for await (const record of client.paginate(def.path, params)) records.push(record);
