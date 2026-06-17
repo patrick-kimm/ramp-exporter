@@ -85,7 +85,7 @@ describe("export users category (end-to-end)", () => {
     }
   });
 
-  test("throws for a category with no wired resources (cards in Slice 1)", async () => {
+  test("throws when a category maps to no resources", async () => {
     const mock = startMockRamp({ resources: {} });
     const out = await mkdtemp(join(tmpdir(), "ramp-empty-"));
     try {
@@ -93,7 +93,7 @@ describe("export users category (end-to-end)", () => {
         runExport({
           config: cfg(out, mock.url),
           credentials: creds,
-          categories: ["cards"],
+          categories: ["nonexistent" as never], // exercises the guard directly
           clientFactory: () => fastClient(mock.url),
         }),
       ).rejects.toThrow(/No resources wired/);

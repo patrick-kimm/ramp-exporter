@@ -16,14 +16,16 @@ export const RESOURCES: Record<string, ResourceDef> = {
   users: { path: "/users", scope: "users:read" },
   departments: { path: "/departments", scope: "departments:read" },
   locations: { path: "/locations", scope: "locations:read" },
-  // Slice 2: cards, spend_limits, spend_programs
+  cards: { path: "/cards", scope: "cards:read" },
+  limits: { path: "/limits", scope: "limits:read" }, // Ramp "spend limits"
+  "spend-programs": { path: "/spend-programs", scope: "spend_programs:read" },
   // Slice 3: vendors, bills, transactions
 };
 
 /** Which raw resources each export category pulls. */
 export const CATEGORY_RESOURCES: Record<Category, string[]> = {
   users: ["users", "departments", "locations"],
-  cards: [], // Slice 2
+  cards: ["cards", "limits", "spend-programs"],
   vendors: [], // Slice 3
 };
 

@@ -98,6 +98,9 @@ Receipts/document binaries · per-payment ledger as a product surface (we captur
 - `README.md`, `config.example.yml`, `docs/export-metadata.schema.json`, `.env.example` — REALIGNED to the decisions above (JSONL, full-snapshot, Ramp-only, no documents). Empty pre-grill scaffold dirs removed.
 - **Not yet scaffolded** (awaiting a separate scaffold pass): CLI structure, JSONL bundle writer, manifest emitter, Cockpit ingest/summary shape. Build order: Users → Cards → Vendors.
 
-## Open verification (before schema lock — non-blocking)
-- Exact Ramp **scope slugs** (e.g. is it `limits:read` / `spend_programs:read`?) — verify against Ramp's scopes page.
-- Exact field names for **vendor bank-detail masking** and the **Spend Limit balance/"funds"** field — verify against Ramp's OpenAPI spec.
+## Verified against Ramp OpenAPI (2026-06-17) — see docs/ramp-api-notes.md
+- **Auth**: client-credentials confirmed; tokenUrl `https://api.ramp.com/developer/v1/token`. Our client matched. ✓
+- **Pagination**: `{data, page:{next}}` + `start`/`page_size`. Our client + mock matched. ✓
+- **Scopes/paths confirmed**: spend limits at `/limits` (`limits:read`), spend programs at `/spend-programs` (`spend_programs:read`), two vendor surfaces (`/vendors` vs `/accounting/vendors`).
+- **Masking CONFIRMED**: card PAN only via `/vault/cards` (`cards:read_vault`, never requested) → masked `last_four`; vendor bank = `account_number_last_four` only. Reinforces the v2 bank-detail re-collection deferral.
+- **Spend Limit `balance`** is on the detail resource, not the list — v1 captures whatever `/limits` list returns.
