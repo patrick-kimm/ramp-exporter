@@ -2,9 +2,11 @@ import type { RampClient } from "./client";
 import type { Category } from "../manifest";
 
 export interface ResourceDef {
-  /** Ramp list endpoint path. TODO-VERIFY paths/scopes against live docs. */
+  /** Ramp list endpoint path (verified — see docs/ramp-api-notes.md). */
   path: string;
   scope: string;
+  /** If the endpoint supports date filtering, the query params the config date_range maps to. */
+  dateParams?: { from: string; to: string };
 }
 
 /**
@@ -19,22 +21,41 @@ export const RESOURCES: Record<string, ResourceDef> = {
   cards: { path: "/cards", scope: "cards:read" },
   limits: { path: "/limits", scope: "limits:read" }, // Ramp "spend limits"
   "spend-programs": { path: "/spend-programs", scope: "spend_programs:read" },
-  // Slice 3: vendors, bills, transactions
+  vendors: { path: "/vendors", scope: "vendors:read" }, // bill-pay vendors (has bank accounts, masked)
+  bills: {
+    path: "/bills",
+    scope: "bills:read",
+    dateParams: { from: "from_issued_date", to: "to_issued_date" },
+  },
+  transactions: {
+    path: "/transactions",
+    scope: "transactions:read",
+    dateParams: { from: "from_date", to: "to_date" },
+  },
 };
 
 /** Which raw resources each export category pulls. */
 export const CATEGORY_RESOURCES: Record<Category, string[]> = {
   users: ["users", "departments", "locations"],
   cards: ["cards", "limits", "spend-programs"],
-  vendors: [], // Slice 3
+  vendors: ["vendors", "bills", "transactions"],
 };
 
 /** Collect every record of a resource (raw-faithful, full snapshot). */
-export async function fetchResource(client: RampClient, name: string): Promise<unknown[]> {
+export async function fetchResource(
+  client: RampClient,
+  name: string,
+  dateRange?: { from: string; to: string },
+): Promise<unknown[]> {
   const def = RESOURCES[name];
   if (!def) throw new Error(`Unknown resource: ${name}`);
+  const params: Record<string, string> = {};
+  if (def.dateParams && dateRange) {
+    params[def.dateParams.from] = dateRange.from;
+    params[def.dateParams.to] = dateRange.to;
+  }
   const records: unknown[] = [];
-  for await (const record of client.paginate(def.path)) records.push(record);
+  for await (const record of client.paginate(def.path, params)) records.push(record);
   return records;
 }
 

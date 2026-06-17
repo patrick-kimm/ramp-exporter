@@ -1,7 +1,7 @@
 export interface MockRamp {
   url: string;
   stop: () => void;
-  requests: { method: string; path: string }[];
+  requests: { method: string; path: string; search: string }[];
 }
 
 export interface MockRampOptions {
@@ -24,14 +24,14 @@ export function startMockRamp(opts: MockRampOptions = {}): MockRamp {
   const resources = opts.resources ?? {};
   const pageSize = opts.pageSize ?? 2;
   const token = opts.validToken ?? "test-token";
-  const requests: { method: string; path: string }[] = [];
+  const requests: { method: string; path: string; search: string }[] = [];
   let remaining429 = opts.failTimes ?? 0;
 
   const server = Bun.serve({
     port: 0,
     fetch(req) {
       const u = new URL(req.url);
-      requests.push({ method: req.method, path: u.pathname });
+      requests.push({ method: req.method, path: u.pathname, search: u.search });
 
       if (u.pathname.endsWith("/token") && req.method === "POST") {
         if (opts.rejectAuth) return new Response("invalid_client", { status: 401 });

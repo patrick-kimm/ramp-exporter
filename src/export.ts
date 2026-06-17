@@ -52,7 +52,7 @@ export async function runExport(opts: RunExportOptions): Promise<ExportResult> {
 
   for (const name of resourceNames) {
     log(`fetching ${name}…`);
-    const records = await fetchResource(client, name);
+    const records = await fetchResource(client, name, opts.config.export.filters.date_range);
     const meta = await bundle.writeResource(name, records);
     log(`  ${name}: ${meta.row_count} records`);
   }
