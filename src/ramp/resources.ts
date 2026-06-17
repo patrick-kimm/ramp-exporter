@@ -20,7 +20,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
   locations: { path: "/locations", scope: "locations:read" },
   entities: { path: "/entities", scope: "entities:read" }, // referenced everywhere via entity_id
   cards: { path: "/cards", scope: "cards:read" },
-  limits: { path: "/limits", scope: "limits:read" }, // Ramp "spend limits"
+  // NB: /limits is the LEGACY alias of /funds (same entities, renamed fields) — we export funds only.
   "spend-programs": { path: "/spend-programs", scope: "spend_programs:read" },
   funds: { path: "/funds", scope: "funds:read" }, // virtual-account / subaccount buckets (balance, members, cards[])
   vendors: { path: "/vendors", scope: "vendors:read" }, // bill-pay vendors (has bank accounts, masked)
@@ -39,7 +39,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
 /** Which raw resources each export category pulls. */
 export const CATEGORY_RESOURCES: Record<Category, string[]> = {
   users: ["users", "departments", "locations", "entities"],
-  cards: ["cards", "limits", "spend-programs", "funds"],
+  cards: ["cards", "spend-programs", "funds"],
   vendors: ["vendors", "bills", "transactions"],
 };
 

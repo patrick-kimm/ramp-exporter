@@ -22,7 +22,7 @@ exporter codes against — not assumptions.
 | locations | `/developer/v1/locations` | `locations:read` |
 | entities | `/developer/v1/entities` | `entities:read` |
 | cards | `/developer/v1/cards` | `cards:read` |
-| spend limits | `/developer/v1/limits` | `limits:read` |
+| spend limits → use **funds** (legacy alias, same entities) | `/developer/v1/limits` | `limits:read` |
 | spend programs | `/developer/v1/spend-programs` | `spend_programs:read` |
 | funds | `/developer/v1/funds` | `funds:read` |
 | vendors (bill-pay) | `/developer/v1/vendors` | `vendors:read` |
@@ -55,7 +55,7 @@ Entity
 Transaction → card_id · limit_id · fund_id · spend_program_id · merchant_id · statement_id · entity_id
 ```
 
-- **Fund** (`/funds`, `funds:read`) is structurally identical to a **Limit** — a balance-bearing bucket with `balance` (cleared/pending/total), `members[]`, `cards[]`, `restrictions`, `spend_program_id`. It is Ramp's analog to a **Slash virtual account / subaccount** (the card's "account bucket"). A **named Fund** ↔ a Slash virtual account; a **standalone Limit** (no fund) ↔ the Primary/default bucket. Value-mapping (Fund → Virtual Account) lives downstream in the Cockpit's Mappings.
+- **Fund == Limit** (verified live 2026-06-17): `/funds` and `/limits` return the **same entities** (identical ids). `/limits` is the **legacy alias** — Ramp rebranded "spend limits" → "Funds" under Spend Controls. Only the field names differ: `users`→`members`, `restrictions`→`spending_restrictions`, `has_program_overridden`→`overrides_spend_program` (and slightly different `cards`/`permitted_spend_types` representations). **We export `funds` only** (canonical); exporting `limits` too would be duplicate data. A Fund is a balance-bearing bucket (`balance` cleared/pending/total, `members[]`, `cards[]`, `spending_restrictions`, `spend_program_id`) — Ramp's analog to a **Slash virtual account / subaccount**; the card→bucket link is `Fund.cards[]`. Value-mapping (Fund → Virtual Account) lives downstream in the Cockpit's Mappings.
 - The card→bucket link is **NOT on the Card object** — resolve via `Fund.cards[]` / `Limit.cards[]`, or `Transaction.fund_id` (transactions carry `fund_id`, `limit_id`, `spend_program_id` for per-bucket reconciliation).
 - `card_program_id` (physical/virtual card program) has **no read endpoint** — captured as an opaque id only.
 - **Entities** (`/entities`, `entities:read`): every Card/Limit/Fund/User references `entity_id`; entity has `is_primary`. Exported in the **users** category (org structure).

@@ -13,7 +13,6 @@ source:
     - locations:read
     - entities:read
     - cards:read
-    - limits:read
     - spend_programs:read
     - funds:read
     - vendors:read
@@ -25,7 +24,7 @@ export:
   # Categories to export. Each expands to a set of raw Ramp resources (raw-faithful, JSONL).
   categories:
     - users                    # -> users, departments, locations, entities
-    - cards                    # -> cards, limits, spend-programs, funds
+    - cards                    # -> cards, spend-programs, funds  (funds = current name for the legacy "limits")
     - vendors                  # -> vendors + bills/transactions METADATA (no receipt binaries)
   mode: full                   # full snapshots only — no incremental in v1
   filters:
