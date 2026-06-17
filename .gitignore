@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+*.tsbuildinfo
+
+# secrets & local config (committed: *.example.*)
+.env
+config.yml
+
+# exporter output bundles (customer data — never commit)
+exports/
+
+# test artifacts
+coverage/
+
+# os / editor
+.DS_Store
+*.swp
+
+# claude worktrees
+.claude/worktrees/
+
+# omc session artifacts
+.omc/

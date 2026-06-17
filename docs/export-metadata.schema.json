@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/yourorg/ramp-exporter/docs/export-metadata.schema.json",
+  "title": "Ramp Export Manifest (v1)",
+  "description": "Self-describing manifest written (last, atomically) at the root of every export bundle. The ONLY coupling between the exporter and the Migration Cockpit. v1: JSONL resources, full snapshots, no documents.",
+  "type": "object",
+  "required": ["format_version", "exporter", "source", "run", "resources"],
+  "properties": {
+    "format_version": {
+      "type": "string",
+      "description": "Semver MAJOR.MINOR of the bundle contract. The Cockpit pins a supported MAJOR range; MAJOR bump = breaking layout change.",
+      "pattern": "^[0-9]+\\.[0-9]+$"
+    },
+    "exporter": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string", "const": "ramp-exporter" },
+        "version": { "type": "string" },
+        "git_sha": { "type": "string" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["system"],
+      "properties": {
+        "system": { "type": "string", "const": "ramp" },
+        "api_version": { "type": "string", "description": "e.g. developer/v1" }
+      }
+    },
+    "run": {
+      "type": "object",
+      "required": ["run_id", "started_at", "status", "mode"],
+      "properties": {
+        "run_id": { "type": "string", "description": "Unique, sortable. e.g. 2026-06-17T12-30-00Z__a1b2c3" },
+        "started_at": { "type": "string", "format": "date-time" },
+        "completed_at": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["complete", "partial", "failed"] },
+        "mode": { "type": "string", "const": "full", "description": "v1 is full-snapshot only; no incremental." }
+      }
+    },
+    "filters": {
+      "type": "object",
+      "properties": {
+        "date_range": {
+          "type": "object",
+          "properties": {
+            "from": { "type": "string" },
+            "to": { "type": "string" }
+          }
+        }
+      }
+    },
+    "categories": {
+      "type": "array",
+      "description": "Which export categories this run requested.",
+      "items": { "type": "string", "enum": ["users", "cards", "vendors"] }
+    },
+    "resources": {
+      "type": "object",
+      "description": "One entry per JSONL file written. Key = resource name (e.g. users, departments, cards, spend_limits, vendors, bills, transactions).",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["file", "format", "status"],
+        "properties": {
+          "file": { "type": "string", "description": "Path relative to bundle root, e.g. users.jsonl" },
+          "format": { "type": "string", "const": "jsonl" },
+          "row_count": { "type": "integer", "minimum": 0 },
+          "sha256": { "type": "string", "description": "Checksum of the file; the Cockpit verifies on ingest." },
+          "status": { "type": "string", "enum": ["complete", "partial", "skipped", "failed"] }
+        }
+      }
+    },
+    "counts_summary": {
+      "type": "object",
+      "description": "Flat resource -> row_count map for quick display.",
+      "additionalProperties": { "type": "integer" }
+    }
+  }
+}
