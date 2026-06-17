@@ -14,14 +14,15 @@ export interface ResourceDef {
  */
 export const RESOURCES: Record<string, ResourceDef> = {
   users: { path: "/users", scope: "users:read" },
-  // Slice 1: departments, locations
+  departments: { path: "/departments", scope: "departments:read" },
+  locations: { path: "/locations", scope: "locations:read" },
   // Slice 2: cards, spend_limits, spend_programs
   // Slice 3: vendors, bills, transactions
 };
 
 /** Which raw resources each export category pulls. */
 export const CATEGORY_RESOURCES: Record<Category, string[]> = {
-  users: ["users"], // Slice 0: users only; +departments,+locations in Slice 1
+  users: ["users", "departments", "locations"],
   cards: [], // Slice 2
   vendors: [], // Slice 3
 };

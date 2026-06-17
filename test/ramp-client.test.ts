@@ -8,7 +8,7 @@ const fast = { rateLimitRps: 1000, sleepImpl: async () => {} };
 describe("RampClient", () => {
   test("authenticates and paginates across all pages, verbatim", async () => {
     const users = [{ id: "u1" }, { id: "u2" }, { id: "u3" }, { id: "u4" }, { id: "u5" }];
-    const mock = startMockRamp({ users, pageSize: 2 });
+    const mock = startMockRamp({ resources: { users }, pageSize: 2 });
     try {
       const client = new RampClient({ apiBase: mock.url, credentials: creds, scopes: ["users:read"], ...fast });
       const out: unknown[] = [];
@@ -23,7 +23,7 @@ describe("RampClient", () => {
 
   test("retries on 429 then succeeds", async () => {
     const users = [{ id: "u1" }];
-    const mock = startMockRamp({ users, failTimes: 2 });
+    const mock = startMockRamp({ resources: { users }, failTimes: 2 });
     try {
       const client = new RampClient({ apiBase: mock.url, credentials: creds, maxRetries: 5, ...fast });
       const out: unknown[] = [];
@@ -35,7 +35,7 @@ describe("RampClient", () => {
   });
 
   test("gives up after maxRetries with RampApiError", async () => {
-    const mock = startMockRamp({ users: [{ id: "u1" }], failTimes: 99 });
+    const mock = startMockRamp({ resources: { users: [{ id: "u1" }] }, failTimes: 99 });
     try {
       const client = new RampClient({ apiBase: mock.url, credentials: creds, maxRetries: 1, ...fast });
       const run = async () => {

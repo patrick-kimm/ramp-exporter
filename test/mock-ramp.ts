@@ -5,9 +5,10 @@ export interface MockRamp {
 }
 
 export interface MockRampOptions {
-  users?: unknown[];
+  /** resource name (last path segment) -> all of its records */
+  resources?: Record<string, unknown[]>;
   pageSize?: number;
-  /** Return 429 this many times (on the users endpoint) before succeeding. */
+  /** Return 429 this many times before succeeding (counts down globally). */
   failTimes?: number;
   validToken?: string;
   /** Make the token endpoint reject credentials. */
@@ -16,11 +17,11 @@ export interface MockRampOptions {
 
 /**
  * Hermetic stand-in for the Ramp API: an in-process Bun server emulating the
- * token endpoint, bearer auth, and cursor pagination. Lets the whole spine be
- * tested without touching the network or real credentials.
+ * token endpoint, bearer auth, and cursor pagination for any resource. Lets the
+ * whole spine be tested without touching the network or real credentials.
  */
 export function startMockRamp(opts: MockRampOptions = {}): MockRamp {
-  const users = opts.users ?? [];
+  const resources = opts.resources ?? {};
   const pageSize = opts.pageSize ?? 2;
   const token = opts.validToken ?? "test-token";
   const requests: { method: string; path: string }[] = [];
@@ -41,16 +42,18 @@ export function startMockRamp(opts: MockRampOptions = {}): MockRamp {
         return new Response("unauthorized", { status: 401 });
       }
 
-      if (u.pathname.endsWith("/users")) {
+      const name = u.pathname.split("/").filter(Boolean).pop() ?? "";
+      const records = resources[name];
+      if (records) {
         if (remaining429 > 0) {
           remaining429--;
           return new Response("rate limited", { status: 429, headers: { "retry-after": "0" } });
         }
         const start = Number(u.searchParams.get("start") ?? "0");
-        const slice = users.slice(start, start + pageSize);
+        const slice = records.slice(start, start + pageSize);
         const nextStart = start + pageSize;
         const next =
-          nextStart < users.length ? `${u.origin}/developer/v1/users?start=${nextStart}` : null;
+          nextStart < records.length ? `${u.origin}/developer/v1/${name}?start=${nextStart}` : null;
         return Response.json({ data: slice, page: { next } });
       }
 
