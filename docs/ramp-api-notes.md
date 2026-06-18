@@ -45,7 +45,7 @@ Note: scope slugs use underscores (`spend_programs:read`); some paths use hyphen
 
 ## Migration field sources (verified 2026-06-18)
 - **Vendor email** → not on the vendor object; lives on `/vendors/{id}/contacts` (per-vendor sub-resource, `vendors:read`; fields `email`, `first_name`, `last_name`, `phone`, `is_default`). The exporter pulls it as the `vendor_contacts` resource (each row tagged with `vendor_id`).
-- **Spend-category names** → NOT available: there is no category endpoint. Cards/funds expose `blocked_category_codes`/`allowed_category_codes` (raw codes) only; names must be resolved downstream from a static table.
+- **Spend-category names** → no category *endpoint*, but Ramp publishes the code→name table (44 codes) as `x-enum-descriptions` in the spec. Extracted to [`ramp-category-codes.json`](./ramp-category-codes.json). Cards/funds expose `blocked_category_codes`/`allowed_category_codes` (raw codes, e.g. `[20, 30]`); resolve them against that static table downstream (`20`→"Alcohol and bars", `30`→"Gambling"). Exporter stays raw — codes only.
 - **Vendor↔transaction link** → `vendor.merchant_id` == `transaction.merchant_id` (both already extracted; per-vendor txn counts are a downstream join, not a new resource).
 - **User status enum**: `USER_ACTIVE`, `INVITE_PENDING`, `INVITE_EXPIRED`, `USER_DRAFT`, `USER_ONBOARDING`, `USER_INACTIVE` (terminated/deactivated), `USER_SUSPENDED`.
 
