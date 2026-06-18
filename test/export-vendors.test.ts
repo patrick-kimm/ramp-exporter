@@ -36,7 +36,8 @@ describe("export vendors category (end-to-end)", () => {
     const transactions = [
       { id: "t1", card_id: "c1", merchant_name: "Acme", amount: 2500, payment_method: "CARD" },
     ];
-    const mock = startMockRamp({ resources: { vendors, bills, transactions }, pageSize: 50 });
+    const contacts = [{ id: "ct1", email: "ap@acme.com", first_name: "AP", last_name: "Clerk", is_default: true }];
+    const mock = startMockRamp({ resources: { vendors, contacts, bills, transactions }, pageSize: 50 });
     const out = await mkdtemp(join(tmpdir(), "ramp-vendors-"));
     try {
       const { bundleDir, manifest } = await runExport({
@@ -46,7 +47,7 @@ describe("export vendors category (end-to-end)", () => {
         clientFactory: () => fastClient(mock.url),
       });
 
-      expect(manifest.counts_summary).toEqual({ vendors: 2, bills: 1, transactions: 1 });
+      expect(manifest.counts_summary).toEqual({ vendors: 2, vendor_contacts: 2, bills: 1, transactions: 1 });
       expect(await validateBundle(bundleDir).then((r) => r.ok)).toBe(true);
 
       // date filter applied to the ledger endpoints, normalized to ISO datetimes (Ramp rejects bare dates)...
@@ -65,6 +66,13 @@ describe("export vendors category (end-to-end)", () => {
       );
       expect(v0.account_number_last_four).toBe("4321");
       expect(v0).not.toHaveProperty("account_number");
+
+      // vendor contacts: fetched per-vendor (sub-resource), tagged with vendor_id, carrying email
+      const contactRows = (await readFile(join(bundleDir, "vendor_contacts.jsonl"), "utf8"))
+        .trimEnd().split("\n").map((l) => JSON.parse(l));
+      expect(contactRows).toHaveLength(2); // one per vendor
+      expect(contactRows[0].email).toBe("ap@acme.com");
+      expect(["v1", "v2"]).toContain(contactRows[0].vendor_id);
     } finally {
       mock.stop();
     }

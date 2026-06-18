@@ -2,7 +2,7 @@ import { BundleWriter } from "./bundle";
 import type { Config, Credentials } from "./config";
 import { buildManifest, type Category, type Manifest } from "./manifest";
 import { RampClient } from "./ramp/client";
-import { fetchResource, resourcesForCategories } from "./ramp/resources";
+import { RESOURCES, fetchResource, fetchSubResource, resourcesForCategories } from "./ramp/resources";
 
 export interface ExportResult {
   bundleDir: string;
@@ -55,9 +55,14 @@ export async function runExport(opts: RunExportOptions): Promise<ExportResult> {
   log(`bundle: ${bundle.bundleDir}`);
 
   const collected: Record<string, unknown[]> | undefined = opts.collectRecords ? {} : undefined;
+  const fetched: Record<string, unknown[]> = {};
   for (const name of resourceNames) {
     log(`fetching ${name}…`);
-    const records = await fetchResource(client, name, opts.config.export.filters.date_range);
+    const def = RESOURCES[name];
+    const records = def?.parent
+      ? await fetchSubResource(client, name, fetched[def.parent.resource] ?? [])
+      : await fetchResource(client, name, opts.config.export.filters.date_range);
+    fetched[name] = records;
     const meta = await bundle.writeResource(name, records);
     if (collected) collected[name] = records;
     log(`  ${name}: ${meta.row_count} records`);

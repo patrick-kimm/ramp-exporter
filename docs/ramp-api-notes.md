@@ -26,6 +26,7 @@ exporter codes against — not assumptions.
 | spend programs | `/developer/v1/spend-programs` | `spend_programs:read` |
 | funds | `/developer/v1/funds` | `funds:read` |
 | vendors (bill-pay) | `/developer/v1/vendors` | `vendors:read` |
+| vendor contacts (sub-resource, per vendor) | `/developer/v1/vendors/{id}/contacts` | `vendors:read` |
 | vendors (accounting) | `/developer/v1/accounting/vendors` | `accounting:read` |
 | bills | `/developer/v1/bills` | `bills:read` |
 | transactions | `/developer/v1/transactions` | `transactions:read` |
@@ -41,6 +42,12 @@ Note: scope slugs use underscores (`spend_programs:read`); some paths use hyphen
 - Card spending restrictions (`amount`, `interval`, `transaction_amount_limit`) are fields on the card/limit — confirms there is **no separate Policy object**.
 - Payment **rail** = `payment_method` on bill payments (`ApiBillPayment`), alongside `amount`. CORRECTION (from live data): the `/vendors` object **does** carry native per-vendor spend totals — `total_spend_ytd` / `_last_30_days` / `_last_365_days` / `_all_time` (each `{amount, minor_unit_conversion_rate, currency_code}`) plus `default_payment_method`. So the Cockpit rollup can read these directly instead of summing the ledger (the earlier "no native vendor total" claim was an OpenAPI-truncation artifact).
 - **Date filters require full ISO-8601 datetimes** (confirmed live 2026-06-17): bare `YYYY-MM-DD` returns `422 DEVELOPER_7001 "Not a valid datetime"`. bills use `from_issued_date`/`to_issued_date`; transactions use `from_date`/`to_date`. The exporter normalizes via `toRampDatetime` (from→`T00:00:00Z`, to→`T23:59:59Z`).
+
+## Migration field sources (verified 2026-06-18)
+- **Vendor email** → not on the vendor object; lives on `/vendors/{id}/contacts` (per-vendor sub-resource, `vendors:read`; fields `email`, `first_name`, `last_name`, `phone`, `is_default`). The exporter pulls it as the `vendor_contacts` resource (each row tagged with `vendor_id`).
+- **Spend-category names** → NOT available: there is no category endpoint. Cards/funds expose `blocked_category_codes`/`allowed_category_codes` (raw codes) only; names must be resolved downstream from a static table.
+- **Vendor↔transaction link** → `vendor.merchant_id` == `transaction.merchant_id` (both already extracted; per-vendor txn counts are a downstream join, not a new resource).
+- **User status enum**: `USER_ACTIVE`, `INVITE_PENDING`, `INVITE_EXPIRED`, `USER_DRAFT`, `USER_ONBOARDING`, `USER_INACTIVE` (terminated/deactivated), `USER_SUSPENDED`.
 
 ## Card / spend-control model (cards category)
 The card config is a quartet — `cards` + `limits` + `spend-programs` + `funds` — all scoped to an **Entity**:

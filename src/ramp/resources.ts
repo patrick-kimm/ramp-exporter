@@ -2,11 +2,13 @@ import type { RampClient } from "./client";
 import type { Category } from "../manifest";
 
 export interface ResourceDef {
-  /** Ramp list endpoint path (verified — see docs/ramp-api-notes.md). */
-  path: string;
+  /** Ramp list endpoint path (verified — see docs/ramp-api-notes.md). Omitted for sub-resources (use `parent`). */
+  path?: string;
   scope: string;
   /** If the endpoint supports date filtering, the query params the config date_range maps to. */
   dateParams?: { from: string; to: string };
+  /** Fetched once per parent record (e.g. /vendors/{id}/contacts); the parent id is injected as `linkField`. */
+  parent?: { resource: string; subPath: (parentId: string) => string; linkField: string };
 }
 
 /**
@@ -24,6 +26,10 @@ export const RESOURCES: Record<string, ResourceDef> = {
   "spend-programs": { path: "/spend-programs", scope: "spend_programs:read" },
   funds: { path: "/funds", scope: "funds:read" }, // virtual-account / subaccount buckets (balance, members, cards[])
   vendors: { path: "/vendors", scope: "vendors:read" }, // bill-pay vendors (has bank accounts, masked)
+  vendor_contacts: {
+    scope: "vendors:read",
+    parent: { resource: "vendors", subPath: (id) => `/vendors/${id}/contacts`, linkField: "vendor_id" },
+  },
   bills: {
     path: "/bills",
     scope: "bills:read",
@@ -40,7 +46,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
 export const CATEGORY_RESOURCES: Record<Category, string[]> = {
   users: ["users", "departments", "locations", "entities"],
   cards: ["cards", "spend-programs", "funds"],
-  vendors: ["vendors", "bills", "transactions"],
+  vendors: ["vendors", "vendor_contacts", "bills", "transactions"],
 };
 
 /** Ramp's date filters require a full ISO-8601 datetime, not a bare YYYY-MM-DD (returns 422 otherwise). */
@@ -60,6 +66,7 @@ export async function fetchResource(
 ): Promise<unknown[]> {
   const def = RESOURCES[name];
   if (!def) throw new Error(`Unknown resource: ${name}`);
+  if (!def.path) throw new Error(`${name} is a sub-resource — fetch it via fetchSubResource`);
   const params: Record<string, string> = {};
   if (def.dateParams && dateRange) {
     params[def.dateParams.from] = toRampDatetime(dateRange.from, "start");
@@ -68,6 +75,26 @@ export async function fetchResource(
   const records: unknown[] = [];
   for await (const record of client.paginate(def.path, params)) records.push(record);
   return records;
+}
+
+/** Fetched once per parent record (e.g. /vendors/{id}/contacts). Injects the parent id as the link field. */
+export async function fetchSubResource(
+  client: RampClient,
+  name: string,
+  parentRecords: unknown[],
+): Promise<unknown[]> {
+  const def = RESOURCES[name];
+  if (!def?.parent) throw new Error(`${name} is not a sub-resource`);
+  const { subPath, linkField } = def.parent;
+  const out: unknown[] = [];
+  for (const parent of parentRecords) {
+    const pid = (parent as Record<string, unknown>).id;
+    if (typeof pid !== "string") continue;
+    for await (const record of client.paginate(subPath(pid))) {
+      out.push({ [linkField]: pid, ...(record as Record<string, unknown>) });
+    }
+  }
+  return out;
 }
 
 export function resourcesForCategories(categories: Category[]): string[] {
