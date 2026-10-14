@@ -1,41 +1,28 @@
-# ramp-exporter configuration — copy to config.yml and fill in.
+# ramp-exporter configuration — copy to config.yml and fill in. Every key is optional.
 # Secrets come from ENV VARS (see .env.example), never this file.
 
-format_version: "1.0"          # the export-bundle contract this run targets
+format_version: "1.1"          # the export-bundle contract this run targets
 
 source:
-  api_base: https://api.ramp.com/developer/v1
-  # Auth via env: RAMP_CLIENT_ID + RAMP_CLIENT_SECRET (OAuth2 client-credentials).
-  # Customer admin mints a READ-ONLY app: Ramp dashboard -> Settings -> Developer.
-  scopes:                      # least privilege, read-only
-    - users:read
-    - departments:read
-    - locations:read
-    - entities:read
-    - cards:read
-    - spend_programs:read
-    - funds:read
-    - vendors:read
-    - bills:read
-    - transactions:read
-  # Scope slugs verified against Ramp's OpenAPI (see docs/ramp-api-notes.md).
+  system: ramp                 # ramp | mercury | brex | rho  (or pass --source on the command line)
+  # api_base: https://api.ramp.com/developer/v1   # defaults to the source's production API
+  # Ramp only: scopes requested at token time. Defaults to all ten the export needs:
+  # users:read departments:read locations:read entities:read cards:read spend_programs:read
+  # funds:read vendors:read bills:read transactions:read
 
 export:
-  # Categories to export. Each expands to a set of raw Ramp resources (raw-faithful, JSONL).
-  categories:
-    - users                    # -> users, departments, locations, entities
-    - cards                    # -> cards, spend-programs, funds  (funds = current name for the legacy "limits")
-    - vendors                  # -> vendors + bills/transactions METADATA (no receipt binaries)
-  mode: full                   # full snapshots only — no incremental in v1
+  # Category ids differ per source — run `ramp-exporter sources` to list them. Defaults to all.
+  # categories: [users, cards, vendors]
+  mode: full                   # full snapshots only — no incremental
   filters:
-    # Bounds the vendors ledger pull. Users/cards ignore this.
-    date_range: { from: "2023-01-01", to: "2026-06-17" }
+    # Inclusive days. Bounds only the ledgers (transactions, bills, expenses…); everything else is exported in full.
+    # date_range: { from: "2023-01-01", to: "2026-06-17" }
 
 output:
-  backend: local               # v1 = local only (cloud bucket / SFTP = v2)
-  path: ./exports              # bundle written to {path}/ramp/{run_id}/
+  backend: local               # local only for now
+  path: ./exports              # bundle written to {path}/{system}/{run_id}/
 
 runtime:
-  rate_limit_rps: 8            # be a good API citizen
+  # rate_limit_rps: 8          # defaults to each source's pace (Rho: 0.9 — it asks clients not to burst)
   max_retries: 6               # exponential backoff + jitter; honors Retry-After
   log_format: text             # text | json

@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/yourorg/ramp-exporter/docs/export-metadata.schema.json",
-  "title": "Ramp Export Manifest (v1)",
-  "description": "Self-describing manifest written (last, atomically) at the root of every export bundle. The ONLY coupling between the exporter and the Migration Cockpit. v1: JSONL resources, full snapshots, no documents.",
+  "$id": "https://github.com/patrick-kimm/ramp-exporter/docs/export-metadata.schema.json",
+  "title": "Export Manifest (v1.1)",
+  "description": "Self-describing manifest written (last, atomically) at the root of every export bundle, {output}/{system}/{run_id}/. The ONLY coupling between the exporter and the Migration Cockpit. 1.1 adds multiple source systems and resources that were skipped or failed (recorded without a file). JSONL resources, full snapshots, no documents.",
   "type": "object",
   "required": ["format_version", "exporter", "source", "run", "resources"],
   "properties": {
@@ -24,8 +24,8 @@
       "type": "object",
       "required": ["system"],
       "properties": {
-        "system": { "type": "string", "const": "ramp" },
-        "api_version": { "type": "string", "description": "e.g. developer/v1" }
+        "system": { "type": "string", "enum": ["ramp", "mercury", "brex", "rho"] },
+        "api_version": { "type": "string", "description": "e.g. developer/v1 (Ramp), v1 (Mercury, Rho), v1+v2 (Brex)" }
       }
     },
     "run": {
@@ -35,8 +35,12 @@
         "run_id": { "type": "string", "description": "Unique, sortable. e.g. 2026-06-17T12-30-00Z__a1b2c3" },
         "started_at": { "type": "string", "format": "date-time" },
         "completed_at": { "type": "string", "format": "date-time" },
-        "status": { "type": "string", "enum": ["complete", "partial", "failed"] },
-        "mode": { "type": "string", "const": "full", "description": "v1 is full-snapshot only; no incremental." }
+        "status": {
+          "type": "string",
+          "enum": ["complete", "partial", "failed"],
+          "description": "complete: every resource complete. partial: at least one complete, others skipped or failed. A run where nothing completes writes no bundle."
+        },
+        "mode": { "type": "string", "const": "full", "description": "Full snapshots only; no incremental." }
       }
     },
     "filters": {
@@ -44,6 +48,7 @@
       "properties": {
         "date_range": {
           "type": "object",
+          "description": "Inclusive YYYY-MM-DD days. Applies only to the source's dated resources (ledgers); everything else is exported in full.",
           "properties": {
             "from": { "type": "string" },
             "to": { "type": "string" }
@@ -53,22 +58,27 @@
     },
     "categories": {
       "type": "array",
-      "description": "Which export categories this run requested.",
-      "items": { "type": "string", "enum": ["users", "cards", "vendors"] }
+      "description": "Which of the source's categories this run requested (see `ramp-exporter sources`).",
+      "items": { "type": "string" }
     },
     "resources": {
       "type": "object",
-      "description": "One entry per JSONL file written. Key = resource name (e.g. users, departments, cards, spend_limits, vendors, bills, transactions).",
+      "description": "One entry per resource the run attempted. Key = the source's resource name (e.g. users, transactions, cash_statements).",
       "additionalProperties": {
         "type": "object",
-        "required": ["file", "format", "status"],
+        "required": ["row_count", "status"],
         "properties": {
-          "file": { "type": "string", "description": "Path relative to bundle root, e.g. users.jsonl" },
+          "file": { "type": "string", "description": "Path relative to bundle root, e.g. users.jsonl. Absent when skipped or failed." },
           "format": { "type": "string", "const": "jsonl" },
           "row_count": { "type": "integer", "minimum": 0 },
           "sha256": { "type": "string", "description": "Checksum of the file; the Cockpit verifies on ingest." },
-          "status": { "type": "string", "enum": ["complete", "partial", "skipped", "failed"] }
-        }
+          "status": { "type": "string", "enum": ["complete", "partial", "skipped", "failed"] },
+          "reason": { "type": "string", "description": "Plain-language reason a resource was skipped or failed." },
+          "scope": { "type": "string", "description": "The token permission that would have allowed a skipped resource." }
+        },
+        "if": { "properties": { "status": { "const": "complete" } } },
+        "then": { "required": ["file", "format", "sha256"] },
+        "else": { "required": ["reason"] }
       }
     },
     "counts_summary": {
