@@ -79,11 +79,11 @@ export class RampClient {
 
     if (res.status === 401 || res.status === 403) {
       throw new RampAuthError(
-        `Ramp auth failed (${res.status}). Check RAMP_CLIENT_ID / RAMP_CLIENT_SECRET and that the app has the requested read scopes.`,
+        `Ramp auth failed (${res.status}). Check RAMP_CLIENT_ID / RAMP_CLIENT_SECRET and that the app has the requested read scopes.${await this.errorDetail(res)}`,
       );
     }
     if (!res.ok) {
-      throw new RampApiError(`Ramp token request failed (${res.status})`, res.status);
+      throw new RampApiError(`Ramp token request failed (${res.status})${await this.errorDetail(res)}`, res.status);
     }
 
     const json = (await res.json()) as { access_token?: string; expires_in?: number };
@@ -125,10 +125,26 @@ export class RampClient {
         continue;
       }
       if (res.status === 401 || res.status === 403) {
-        throw new RampAuthError(`Unauthorized (${res.status}) for ${url}`);
+        throw new RampAuthError(`Unauthorized (${res.status}) for ${url}${await this.errorDetail(res)}`);
       }
-      throw new RampApiError(`Ramp API error ${res.status} for ${url}`, res.status);
+      throw new RampApiError(`Ramp API error ${res.status} for ${url}${await this.errorDetail(res)}`, res.status);
     }
+  }
+
+  /** Ramp's error body, with credentials redacted, so a missing scope or bad filter names itself. */
+  private async errorDetail(res: Response): Promise<string> {
+    let body: string;
+    try {
+      body = (await res.text()).trim();
+    } catch {
+      return "";
+    }
+    if (!body) return "";
+    const { clientId, clientSecret } = this.opts.credentials;
+    for (const secret of [clientId, clientSecret, this.accessToken]) {
+      if (secret) body = body.split(secret).join("[redacted]");
+    }
+    return ` — Ramp says: ${body.length > 500 ? `${body.slice(0, 500)}…` : body}`;
   }
 
   /** Honor Retry-After when present; otherwise exponential backoff with jitter. */

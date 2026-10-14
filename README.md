@@ -24,11 +24,12 @@ bun install
 ```
 
 Create a **read-only** Ramp developer app — Ramp dashboard → **Settings → Developer** → new app →
-grant type **Client credentials** — and enable these read scopes:
+grant type **Client credentials** — and enable **all ten** of these read scopes (Ramp rejects the
+token request with a 403 if any one is missing):
 
 ```
-users:read  departments:read  locations:read
-cards:read  limits:read  spend_programs:read
+users:read  departments:read  locations:read  entities:read
+cards:read  spend_programs:read  funds:read
 vendors:read  bills:read  transactions:read
 ```
 
@@ -40,7 +41,8 @@ Copy the **Client ID** and **Client Secret**.
 bun run src/cli.ts ui        # serves http://localhost:4747 and opens your browser
 ```
 
-Paste your Client ID + Secret, pick categories, hit **Run export →**. Your data appears in a tab
+Paste your Client ID + Secret, pick categories, hit **Run export →**. Bills and transactions
+export your full history unless you set a date window under **advanced**. Your data appears in a tab
 per resource, and the same files are written to `./exports`. Credentials never leave your machine.
 
 ### Option B — the CLI

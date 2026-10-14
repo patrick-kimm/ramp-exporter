@@ -56,4 +56,25 @@ describe("RampClient", () => {
       mock.stop();
     }
   });
+
+  test("auth errors surface Ramp's reason with credentials redacted", async () => {
+    const realCreds = { clientId: "ramp_id_testClient123", clientSecret: "ramp_sec_testSecret456" };
+    const mock = startMockRamp({
+      rejectAuthWith: {
+        status: 403,
+        body: `{"error":"invalid_scope","error_description":"funds:read not allowed for this client (${realCreds.clientSecret})"}`,
+      },
+    });
+    try {
+      const client = new RampClient({ apiBase: mock.url, credentials: realCreds, ...fast });
+      const err = await client.authenticate().catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(RampAuthError);
+      const message = (err as Error).message;
+      expect(message).toContain("Ramp auth failed (403)");
+      expect(message).toContain("funds:read not allowed for this client ([redacted])");
+      expect(message).not.toContain(realCreds.clientSecret);
+    } finally {
+      mock.stop();
+    }
+  });
 });

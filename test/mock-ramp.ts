@@ -13,6 +13,8 @@ export interface MockRampOptions {
   validToken?: string;
   /** Make the token endpoint reject credentials. */
   rejectAuth?: boolean;
+  /** Make the token endpoint reject with this status and body (e.g. a 403 naming a missing scope). */
+  rejectAuthWith?: { status: number; body: string };
 }
 
 /**
@@ -34,6 +36,9 @@ export function startMockRamp(opts: MockRampOptions = {}): MockRamp {
       requests.push({ method: req.method, path: u.pathname, search: u.search });
 
       if (u.pathname.endsWith("/token") && req.method === "POST") {
+        if (opts.rejectAuthWith) {
+          return new Response(opts.rejectAuthWith.body, { status: opts.rejectAuthWith.status });
+        }
         if (opts.rejectAuth) return new Response("invalid_client", { status: 401 });
         return Response.json({ access_token: token, expires_in: 3600 });
       }
