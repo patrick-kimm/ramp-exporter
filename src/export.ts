@@ -11,6 +11,12 @@ export interface ExportResult {
   records?: Record<string, unknown[]>;
 }
 
+export type ExportProgress =
+  | { type: "plan"; resources: string[] }
+  | { type: "resource_start"; resource: string }
+  | { type: "resource_progress"; resource: string; done: number; total: number }
+  | { type: "resource_done"; resource: string; count: number };
+
 export interface RunExportOptions {
   config: Config;
   credentials: Credentials;
@@ -18,6 +24,9 @@ export interface RunExportOptions {
   /** Injectable for tests. */
   clientFactory?: () => RampClient;
   log?: (msg: string) => void;
+  onProgress?: (event: ExportProgress) => void;
+  /** Checked between requests; an aborted export throws and leaves no _SUCCESS sentinel. */
+  signal?: AbortSignal;
   exporterVersion?: string;
   /** Keep fetched records in memory and return them (the UI renders these). Off by default to keep the CLI lean. */
   collectRecords?: boolean;
@@ -29,6 +38,7 @@ export interface RunExportOptions {
  */
 export async function runExport(opts: RunExportOptions): Promise<ExportResult> {
   const log = opts.log ?? (() => {});
+  const progress = opts.onProgress ?? (() => {});
   const startedAt = new Date().toISOString();
 
   const resourceNames = resourcesForCategories(opts.categories);
@@ -48,6 +58,7 @@ export async function runExport(opts: RunExportOptions): Promise<ExportResult> {
       maxRetries: opts.config.runtime.max_retries,
     });
 
+  progress({ type: "plan", resources: resourceNames });
   await client.authenticate();
 
   const bundle = new BundleWriter(opts.config.output.path);
@@ -57,16 +68,23 @@ export async function runExport(opts: RunExportOptions): Promise<ExportResult> {
   const collected: Record<string, unknown[]> | undefined = opts.collectRecords ? {} : undefined;
   const fetched: Record<string, unknown[]> = {};
   for (const name of resourceNames) {
+    opts.signal?.throwIfAborted();
     log(`fetching ${name}…`);
+    progress({ type: "resource_start", resource: name });
     const def = RESOURCES[name];
     const records = def?.parent
-      ? await fetchSubResource(client, name, fetched[def.parent.resource] ?? [])
+      ? await fetchSubResource(client, name, fetched[def.parent.resource] ?? [], {
+          signal: opts.signal,
+          onParentDone: (done, total) => progress({ type: "resource_progress", resource: name, done, total }),
+        })
       : await fetchResource(client, name, opts.config.export.filters.date_range);
     fetched[name] = records;
     const meta = await bundle.writeResource(name, records);
     if (collected) collected[name] = records;
     log(`  ${name}: ${meta.row_count} records`);
+    progress({ type: "resource_done", resource: name, count: meta.row_count });
   }
+  opts.signal?.throwIfAborted();
 
   const manifest = buildManifest({
     exporterVersion: opts.exporterVersion ?? "0.1.0",

@@ -3,381 +3,1002 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ramp Exporter — Local</title>
+<title>Ramp export · Slash</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --bg: #0a0a0b;
-    --panel: #141417;
-    --panel-2: #1a1a1e;
-    --line: #26262c;
-    --line-bright: #3a3a44;
-    --text: #ededee;
-    --muted: #8b8b93;
-    --faint: #5a5a63;
-    --gold: #d4af6a;
-    --gold-bright: #ecc984;
-    --ok: #5fd38d;
-    --err: #ff6f6f;
-    --steel: #9bb6cc;
-    --serif: "Instrument Serif", Georgia, serif;
-    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --color-surface-subtle: oklch(98% 0.002 67);
+    --color-surface-neutral: oklch(100% 0 0);
+    --color-bg-neutral-subtle: oklch(99.1% 0.001 108);
+    --color-bg-neutral-prominent: oklch(96.4% 0.003 84.6);
+    --color-bg-cta: oklch(31.2% 0.009 97.7);
+    --color-border-subtle: oklch(92.8% 0.006 84.6);
+    --color-border-normal: oklch(91.3% 0.008 91.6);
+    --color-border-prominent: oklch(89.8% 0.010 87.5);
+    --color-text-subtle: oklch(65.1% 0.020 86.2);
+    --color-text-normal: oklch(51.9% 0.015 82.4);
+    --color-text-prominent: oklch(31.2% 0.009 97.7);
+    --color-text-on-bold: oklch(99.1% 0.001 108);
+    --color-accent-bg-subtle: oklch(97.9% 0.021 101.1);
+    --color-accent-bg-prominent: oklch(94.6% 0.045 97.6);
+    --color-accent-border: oklch(91% 0.073 96.6);
+    --color-accent-bold: oklch(65.2% 0.131 91.7);
+    --color-accent-text: oklch(52.1% 0.104 93);
+    --color-success-bg: oklch(94.2% 0.032 148.3);
+    --color-success-text: oklch(50.3% 0.152 144.4);
+    --color-warning-bg: oklch(94.7% 0.031 81.8);
+    --color-warning-text: oklch(52.9% 0.117 56.8);
+    --color-danger-bg: oklch(95.2% 0.020 13.4);
+    --color-danger-text: oklch(54.2% 0.178 23.6);
+    --color-info-text: oklch(51.9% 0.135 248.6);
+    /* red-200 / red-500 / red-1000 / red-1100 from design-system-v2 tailwind.css (InfoCardV2 danger) */
+    --color-danger-surface: oklch(98.18% 0.008 6.66);
+    --color-danger-border: oklch(93.34% 0.028 14.74);
+    --color-danger-title: oklch(67.31% 0.167 20.06);
+    --color-danger-body: oklch(54.19% 0.178 23.64);
+    --shadow-card: 0 1px 1px 0 oklch(19.05% 0.01 97.9 / 5%);
+    --font-sans: "Inter", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
+  html, body { margin: 0; height: 100%; }
   body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--mono);
-    font-weight: 400;
-    font-size: 14px;
-    line-height: 1.5;
-    letter-spacing: -0.01em;
-    -webkit-font-smoothing: antialiased;
-    min-height: 100vh;
-    background-image:
-      radial-gradient(900px 500px at 78% -10%, rgba(212,175,106,0.10), transparent 60%),
-      radial-gradient(700px 600px at -5% 5%, rgba(155,182,204,0.05), transparent 55%);
-    background-attachment: fixed;
+    font-family: var(--font-sans); font-size: 14px; line-height: 20px; font-weight: 450;
+    color: var(--color-text-normal); background: var(--color-surface-subtle);
+    -webkit-font-smoothing: antialiased; font-synthesis: none;
   }
-  /* grain */
-  .grain {
-    position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.035;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
-  main { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 48px 28px 96px; }
-
-  /* header */
-  header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 40px; }
-  .brand .eyebrow { font-size: 11px; letter-spacing: 0.42em; text-transform: uppercase; color: var(--gold); margin: 0 0 6px; }
-  .brand h1 { font-family: var(--serif); font-weight: 400; font-size: 58px; line-height: 0.92; margin: 0; letter-spacing: 0.005em; }
-  .brand h1 em { font-style: italic; color: var(--gold-bright); }
-  .brand .sub { color: var(--muted); margin: 12px 0 0; max-width: 46ch; }
-  .badge {
-    flex: none; display: inline-flex; align-items: center; gap: 9px; padding: 9px 14px;
-    border: 1px solid var(--line-bright); border-radius: 2px; background: rgba(95,211,141,0.04);
-    font-size: 11px; letter-spacing: 0.06em; color: var(--text); white-space: nowrap;
-  }
-  .badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 0 rgba(95,211,141,0.6); animation: pulse 2.6s infinite; }
-  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(95,211,141,0.5);} 70% { box-shadow: 0 0 0 7px rgba(95,211,141,0);} 100% { box-shadow: 0 0 0 0 rgba(95,211,141,0);} }
-  .badge small { display: block; color: var(--muted); font-size: 10px; letter-spacing: 0.02em; }
-
-  /* panel */
-  .panel { border: 1px solid var(--line); background: linear-gradient(180deg, var(--panel), #111114); border-radius: 4px; }
-  .panel + .panel { margin-top: 22px; }
-  .panel-head { display: flex; align-items: baseline; gap: 12px; padding: 18px 22px; border-bottom: 1px solid var(--line); }
-  .panel-head h2 { font-family: var(--serif); font-weight: 400; font-size: 24px; margin: 0; }
-  .panel-head .idx { color: var(--gold); font-size: 12px; letter-spacing: 0.2em; }
-  .panel-body { padding: 22px; }
-
-  /* form */
-  .field { margin-bottom: 18px; }
-  label.lbl { display: block; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
-  input[type=text], input[type=password], input[type=date] {
-    width: 100%; padding: 12px 14px; background: #0d0d0f; color: var(--text);
-    border: 1px solid var(--line-bright); border-radius: 3px; font-family: var(--mono); font-size: 14px;
-    transition: border-color .15s, box-shadow .15s;
-  }
-  input::placeholder { color: var(--faint); }
-  input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212,175,106,0.12); }
-  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  @media (max-width: 620px) { .two { grid-template-columns: 1fr; } header { flex-direction: column; } .brand h1 { font-size: 46px; } }
-
-  /* chips */
-  .chips { display: flex; gap: 10px; flex-wrap: wrap; }
-  .chip { cursor: pointer; user-select: none; padding: 9px 16px; border: 1px solid var(--line-bright); border-radius: 2px; color: var(--muted); transition: all .15s; font-size: 13px; letter-spacing: 0.02em; }
-  .chip[aria-pressed=true] { color: var(--bg); background: var(--gold); border-color: var(--gold); font-weight: 500; }
-  .chip:hover { border-color: var(--gold); color: var(--text); }
-  .chip[aria-pressed=true]:hover { color: var(--bg); }
-
-  details.adv { margin-top: 4px; }
-  details.adv > summary { cursor: pointer; color: var(--muted); font-size: 12px; letter-spacing: 0.08em; list-style: none; }
-  details.adv > summary::-webkit-details-marker { display: none; }
-  details.adv > summary::before { content: "›"; display: inline-block; margin-right: 8px; transition: transform .2s; color: var(--gold); }
-  details.adv[open] > summary::before { transform: rotate(90deg); }
-  .adv-body { padding-top: 16px; }
-
-  .run-row { display: flex; align-items: center; gap: 18px; margin-top: 24px; }
-  button.run {
-    font-family: var(--mono); font-weight: 600; font-size: 14px; letter-spacing: 0.06em;
-    padding: 14px 30px; border: none; border-radius: 3px; cursor: pointer; color: #100d06;
-    background: linear-gradient(180deg, var(--gold-bright), var(--gold));
-    transition: transform .12s, box-shadow .2s, filter .2s; position: relative; overflow: hidden;
-  }
-  button.run:hover { box-shadow: 0 8px 30px -10px rgba(212,175,106,0.6); transform: translateY(-1px); }
-  button.run:active { transform: translateY(0); }
-  button.run:disabled { filter: grayscale(0.6) brightness(0.7); cursor: progress; }
-  button.run.loading::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.45) 50%, transparent 80%); transform: translateX(-100%); animation: sweep 1.1s infinite; }
-  @keyframes sweep { to { transform: translateX(100%); } }
-  .lock-note { color: var(--faint); font-size: 11.5px; max-width: 38ch; }
-  .lock-note b { color: var(--muted); font-weight: 500; }
-
-  /* status log */
-  #status .panel-body { font-size: 13px; }
-  .logline { display: flex; align-items: center; gap: 12px; padding: 5px 0; color: var(--muted); opacity: 0; animation: fadeup .4s forwards; }
-  .logline .tick { color: var(--ok); }
-  .logline.cur { color: var(--text); }
-  .logline.cur .tick { color: var(--gold); animation: blink 1s steps(2) infinite; }
-  @keyframes blink { 50% { opacity: 0.3; } }
-
-  /* results */
-  .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px,1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
-  .stat { background: var(--panel-2); padding: 16px 18px; }
-  .stat .n { font-family: var(--serif); font-size: 34px; line-height: 1; }
-  .stat .n.zero { color: var(--faint); }
-  .stat .k { font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-top: 8px; }
-  .pathbar { display: flex; align-items: center; gap: 12px; margin-top: 18px; padding: 12px 16px; background: #0d0d0f; border: 1px solid var(--line); border-radius: 3px; }
-  .pathbar .pk { color: var(--gold); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; flex: none; }
-  .pathbar code { color: var(--steel); font-size: 12.5px; word-break: break-all; }
-  .copybtn { margin-left: auto; flex: none; background: transparent; border: 1px solid var(--line-bright); color: var(--muted); padding: 5px 11px; border-radius: 2px; cursor: pointer; font-family: var(--mono); font-size: 11px; }
-  .copybtn:hover { color: var(--text); border-color: var(--gold); }
-
-  /* tabs */
-  .tabs { display: flex; gap: 2px; flex-wrap: wrap; border-bottom: 1px solid var(--line); margin: 26px 0 0; }
-  .tab { position: relative; cursor: pointer; padding: 11px 16px 13px; color: var(--muted); font-size: 12.5px; letter-spacing: 0.04em; border: none; background: none; font-family: var(--mono); }
-  .tab .cnt { color: var(--faint); margin-left: 7px; font-size: 11px; }
-  .tab[aria-selected=true] { color: var(--text); }
-  .tab[aria-selected=true]::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 2px; background: var(--gold); }
-  .tab:hover { color: var(--text); }
-  .tab.empty { color: var(--faint); }
-
-  .tabpanel { padding-top: 20px; }
-  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 3px; }
-  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
-  thead th { text-align: left; padding: 11px 14px; color: var(--gold); font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; font-size: 10.5px; border-bottom: 1px solid var(--line); background: #0e0e10; white-space: nowrap; }
-  tbody td { padding: 10px 14px; border-bottom: 1px solid #1c1c21; color: var(--text); vertical-align: top; white-space: nowrap; max-width: 320px; overflow: hidden; text-overflow: ellipsis; }
-  tbody tr:hover { background: rgba(212,175,106,0.04); }
-  tbody td .nul { color: var(--faint); }
-  tbody td .obj { color: var(--steel); cursor: pointer; }
-  td.exp { width: 24px; text-align: center; color: var(--gold); cursor: pointer; user-select: none; }
-  tr.raw td { background: #0c0c0e; }
-  tr.raw pre { margin: 0; padding: 14px 16px; color: var(--steel); font-size: 11.5px; white-space: pre-wrap; word-break: break-word; max-height: 360px; overflow: auto; }
-  .empty-state { padding: 44px; text-align: center; color: var(--faint); border: 1px dashed var(--line-bright); border-radius: 3px; }
-  .empty-state .big { font-family: var(--serif); font-size: 28px; color: var(--muted); display: block; margin-bottom: 6px; }
-
-  /* error */
-  #error .panel-body { color: var(--err); }
-  #error .msg { background: rgba(255,111,111,0.06); border: 1px solid rgba(255,111,111,0.3); border-radius: 3px; padding: 16px; color: #ffb3b3; font-size: 13px; }
-  #error .tip { color: var(--muted); margin-top: 14px; font-size: 12.5px; }
-
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
   [hidden] { display: none !important; }
-  .reveal { animation: fadeup .5s both; }
-  @keyframes fadeup { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-  footer { margin-top: 56px; color: var(--faint); font-size: 11px; letter-spacing: 0.04em; text-align: center; }
-  footer a { color: var(--muted); }
+  .mono { font-family: var(--font-mono); }
+  .caption { font-size: 13px; line-height: 18px; letter-spacing: 0.15px; }
+  .subtle { color: var(--color-text-subtle); }
+  .prominent { color: var(--color-text-prominent); }
+
+  /* shell */
+  .app { display: flex; flex-direction: column; height: 100vh; padding: 16px 8px 8px; }
+  .app-header { display: flex; align-items: center; justify-content: space-between; height: 48px; padding: 0 16px 16px; flex-shrink: 0; }
+  .app-header .actions { display: flex; align-items: center; gap: 8px; }
+  .local-tag { display: flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--color-border-normal); background: var(--color-bg-neutral-subtle); }
+  .layout { display: flex; flex-direction: column; flex: 1; min-height: 0; border-radius: 10px; overflow: hidden; background: var(--color-surface-neutral); border: 1px solid var(--color-border-normal); }
+  .progress { height: 4px; flex-shrink: 0; background: var(--color-bg-neutral-subtle); }
+  .progress > div { height: 4px; background: var(--color-accent-bold); transition: width .3s ease; }
+  .body { display: flex; flex: 1; min-height: 0; }
+
+  /* steps rail */
+  .steps { display: flex; flex-direction: column; align-items: flex-end; width: 424px; flex-shrink: 0; padding-top: 32px; }
+  .steps ol { display: flex; flex-direction: column; gap: 4px; width: 280px; padding: 0 32px 0 0; margin: 0; list-style: none; }
+  .step { display: flex; align-items: center; gap: 8px; height: 32px; width: 248px; padding: 0 8px; border-radius: 10px; border: 0; background: none; text-align: left; font-weight: 525; color: var(--color-text-subtle); cursor: default; }
+  .step .ico { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; }
+  .step[data-state="current"] { background: var(--color-bg-neutral-subtle); color: var(--color-text-prominent); }
+  .step[data-state="done"] { color: var(--color-success-text); }
+  .step[data-state="done"]:not(:disabled) { cursor: pointer; }
+  .step[data-state="done"]:not(:disabled):hover { background: var(--color-bg-neutral-subtle); }
+
+  /* form column */
+  .column { display: flex; flex-direction: column; width: 578px; flex-shrink: 0; padding: 32px 64px 0; min-height: 0; }
+  .column.wide { width: 1000px; }
+  .column h2 { margin: 0; padding-bottom: 16px; font-size: 24px; line-height: 28px; letter-spacing: -0.15px; font-weight: 600; color: var(--color-text-prominent); flex-shrink: 0; }
+  .scroll { flex: 1; min-height: 0; overflow-y: auto; margin: 0 -8px; padding: 0 8px 16px; }
+  .fields { display: flex; flex-direction: column; gap: 16px; }
+  .flow-footer { display: flex; align-items: center; justify-content: flex-end; gap: 12px; height: 64px; padding: 16px 0; flex-shrink: 0; }
+
+  /* buttons */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; height: 32px; padding: 0 12px; border-radius: 6px; font-weight: 525; white-space: nowrap; border: 1px solid transparent; }
+  .btn.cta { background: var(--color-bg-cta); color: var(--color-text-on-bold); }
+  .btn.outline { background: var(--color-surface-neutral); border-color: var(--color-border-prominent); color: var(--color-text-prominent); box-shadow: var(--shadow-card); }
+  .btn.sm { height: 28px; padding: 0 8px; font-size: 13px; line-height: 18px; }
+  .btn.xs { height: 24px; padding: 0 6px; font-size: 13px; line-height: 18px; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .btn.outline:not(:disabled):hover { background: var(--color-bg-neutral-subtle); }
+  .btn.cta:not(:disabled):hover { background: oklch(25% 0.009 97.7); }
+  :focus-visible { outline: 2px solid var(--color-accent-bold); outline-offset: 2px; }
+
+  /* fields */
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { display: flex; gap: 4px; font-weight: 525; }
+  .field label .req { color: var(--color-danger-text); font-size: 13px; }
+  .input { display: flex; align-items: center; height: 40px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--color-border-normal); background: var(--color-bg-neutral-subtle); box-shadow: var(--shadow-card); }
+  .input:focus-within { border-color: var(--color-accent-bold); box-shadow: 0 0 0 3px var(--color-accent-bg-prominent); }
+  .input input, .input select { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: none; color: var(--color-text-prominent); }
+  .input input::placeholder { color: var(--color-text-subtle); }
+  .input select { appearance: none; cursor: pointer; }
+  .input.select { padding-right: 8px; }
+  .input .icon-btn { display: flex; padding: 4px; margin-right: -4px; border: 0; background: none; border-radius: 4px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* cards */
+  .card { border-radius: 8px; border: 1px solid var(--color-border-normal); background: var(--color-surface-neutral); box-shadow: var(--shadow-card); overflow: hidden; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; height: 40px; padding: 0 12px; background: var(--color-surface-subtle); border-bottom: 1px solid var(--color-border-subtle); font-weight: 525; color: var(--color-text-prominent); }
+  .link { display: inline-flex; align-items: center; gap: 4px; color: var(--color-info-text); font-weight: 525; text-decoration: none; }
+  .link:hover { text-decoration: underline; }
+  .setup-steps { display: flex; flex-direction: column; gap: 12px; padding: 12px; margin: 0; list-style: none; color: var(--color-text-prominent); }
+  .setup-steps li { display: flex; gap: 10px; }
+  .num { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex-shrink: 0; border-radius: 999px; background: var(--color-bg-neutral-prominent); font-size: 12px; font-weight: 525; color: var(--color-text-normal); }
+  .scopes { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  .scope { padding: 0 6px; border-radius: 4px; background: var(--color-bg-neutral-prominent); font-family: var(--font-mono); font-size: 12px; line-height: 20px; color: var(--color-text-normal); }
+  .scope.missing { background: var(--color-danger-border); color: var(--color-danger-body); }
+
+  /* error card (InfoCardV2 danger) */
+  .alert { display: flex; gap: 8px; padding: 12px; border-radius: 6px; border: 1px solid var(--color-danger-border); background: var(--color-danger-surface); box-shadow: var(--shadow-card); }
+  .alert svg { flex-shrink: 0; margin-top: 2px; }
+  .alert .body-col { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .alert .title { font-weight: 525; color: var(--color-danger-title); }
+  .alert .desc { color: var(--color-danger-body); }
+  .alert .raw { margin-top: 4px; padding: 8px; border-radius: 6px; border: 1px solid var(--color-danger-border); background: oklch(100% 0 0 / 60%); font-family: var(--font-mono); font-size: 12px; line-height: 18px; color: var(--color-danger-body); overflow-wrap: anywhere; }
+
+  /* category picker (ProductCard) */
+  .choices { display: flex; flex-direction: column; gap: 12px; }
+  .choice { display: flex; align-items: center; gap: 16px; padding: 20px; border-radius: 10px; border: 1px solid var(--color-border-normal); background: var(--color-surface-subtle); text-align: left; }
+  .choice[aria-checked="true"] { border-color: var(--color-accent-border); }
+  .choice:hover { border-color: var(--color-border-prominent); }
+  .choice[aria-checked="true"]:hover { border-color: var(--color-accent-bold); }
+  .choice .tile { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 8px; background: var(--color-bg-neutral-prominent); }
+  .choice .text { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  .choice .label { font-weight: 650; color: var(--color-text-prominent); }
+  .choice .radio { display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; flex-shrink: 0; border-radius: 999px; border: 1px solid var(--color-border-prominent); background: var(--color-surface-neutral); }
+  .choice[aria-checked="true"] .radio { border-color: var(--color-accent-bold); }
+  .choice[aria-checked="true"] .radio::after { content: ""; width: 12px; height: 12px; border-radius: 999px; background: var(--color-accent-bold); }
+
+  /* export progress */
+  .rows { padding: 4px 0; }
+  .prow { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; }
+  .prow .ico { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex-shrink: 0; }
+  .prow .name { flex: 1; }
+  .prow .meta { color: var(--color-text-subtle); font-variant-numeric: tabular-nums; }
+  .prow[data-state="waiting"] .name { color: var(--color-text-subtle); }
+  .prow[data-state="running"] { background: var(--color-bg-neutral-subtle); }
+  .prow[data-state="running"] .name { font-weight: 525; color: var(--color-text-prominent); }
+  .spin { animation: spin .9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* review */
+  .agg { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .agg b { font-weight: 525; color: var(--color-text-prominent); }
+  .folder { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 4px 0 12px; border-radius: 8px; border: 1px solid var(--color-border-normal); background: var(--color-surface-subtle); }
+  .folder code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 13px; line-height: 18px; }
+  .tabs { display: flex; gap: 24px; height: 40px; border-bottom: 1px solid var(--color-border-subtle); }
+  .tab { display: flex; align-items: center; gap: 6px; height: 40px; padding: 0; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; color: var(--color-text-subtle); }
+  .tab[aria-selected="true"] { border-bottom-color: var(--color-text-prominent); color: var(--color-text-prominent); font-weight: 525; }
+  .count { display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border-radius: 4px; background: var(--color-bg-neutral-prominent); font-size: 13px; line-height: 18px; letter-spacing: 0.15px; font-weight: 450; color: var(--color-text-normal); }
+  .tab[aria-selected="true"] .count { background: var(--color-accent-bg-prominent); color: var(--color-accent-text); }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--color-border-normal); background: var(--color-surface-neutral); color: var(--color-text-normal); }
+  .pill .n { color: var(--color-text-subtle); }
+  .pill[aria-pressed="true"] { border-color: var(--color-accent-bold); background: radial-gradient(120% 140% at 50% 0%, var(--color-accent-bg-subtle) 0%, var(--color-accent-bg-prominent) 100%); color: var(--color-accent-text); font-weight: 525; }
+  .pill[aria-pressed="true"] .n { color: var(--color-accent-text); font-weight: 450; }
+
+  .table-card { border-radius: 8px; border: 1px solid var(--color-border-normal); background: var(--color-surface-neutral); overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  th, td { padding: 0 8px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  th:first-child, td:first-child { padding-left: 16px; }
+  th:last-child, td:last-child { padding-right: 16px; }
+  th { height: 37px; background: var(--color-surface-subtle); border-bottom: 1px solid var(--color-border-subtle); font-size: 13px; line-height: 18px; letter-spacing: 0.15px; font-weight: 450; color: var(--color-text-subtle); }
+  td { height: 41px; border-bottom: 1px solid var(--color-border-subtle); color: var(--color-text-normal); }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover, tbody tr.selected { background: var(--color-bg-neutral-subtle); }
+  .num-col { text-align: right; font-variant-numeric: tabular-nums; }
+  td.money { color: var(--color-text-prominent); }
+  td .mono { font-size: 13px; line-height: 18px; }
+  .who { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--color-text-prominent); }
+  .who span:last-child { overflow: hidden; text-overflow: ellipsis; }
+  .letter { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; border-radius: 6px; border: 1px solid var(--color-border-normal); background: var(--color-surface-neutral); font-size: 12px; font-weight: 600; color: var(--color-text-prominent); }
+  .tag { display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border-radius: 4px; font-size: 13px; line-height: 18px; letter-spacing: 0.15px; background: var(--color-bg-neutral-prominent); color: var(--color-text-normal); }
+  .tag.success { background: var(--color-success-bg); color: var(--color-success-text); }
+  .tag.warning { background: var(--color-warning-bg); color: var(--color-warning-text); }
+  .tag.danger { background: var(--color-danger-bg); color: var(--color-danger-text); }
+  .tag.lg { height: 24px; padding: 0 8px; border-radius: 6px; font-size: 14px; line-height: 20px; letter-spacing: 0; }
+  .empty { padding: 40px 16px; text-align: center; color: var(--color-text-subtle); }
+
+  /* drawer (PanelV2) */
+  .backdrop { position: fixed; inset: 0; z-index: 10; }
+  .backdrop .dim { position: absolute; inset: 0; background: #332D21; opacity: .35; }
+  .backdrop .close { position: absolute; top: 8px; right: 416px; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: oklch(100% 0 0 / 15%); border: 1px solid oklch(100% 0 0 / 35%); }
+  .panel { position: absolute; top: 8px; right: 8px; bottom: 8px; width: 400px; display: flex; flex-direction: column; border-radius: 10px; border: 1px solid var(--color-border-normal); background: var(--color-surface-neutral); overflow: hidden; }
+  .panel-head { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 32px 20px 20px; background: linear-gradient(180deg, oklch(94.91% 0.004 91.62) 0%, var(--color-bg-neutral-subtle) 60%); text-align: center; flex-shrink: 0; }
+  .panel-head .avatar { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; margin-bottom: 8px; border-radius: 10px; border: 1px solid var(--color-border-normal); background: var(--color-surface-neutral); box-shadow: var(--shadow-card); font-size: 20px; font-weight: 600; color: var(--color-text-prominent); }
+  .panel-head .name { font-size: 18px; line-height: 24px; font-weight: 600; color: var(--color-text-prominent); }
+  .panel-head .amount { margin-top: 4px; font-size: 28px; line-height: 36px; font-weight: 600; letter-spacing: -0.3px; color: var(--color-text-prominent); }
+  .panel-head .amount small { font-size: 14px; line-height: 20px; font-weight: 450; letter-spacing: 0; color: var(--color-text-subtle); }
+  .status-card { display: flex; align-items: center; justify-content: space-between; align-self: stretch; margin-top: 12px; padding: 12px; border-radius: 8px; border: 1px solid var(--color-border-subtle); background: var(--color-surface-neutral); box-shadow: var(--shadow-card); }
+  .panel-body { display: flex; flex-direction: column; gap: 20px; flex: 1; min-height: 0; padding: 16px 20px 20px; border-top: 1px solid var(--color-border-subtle); overflow-y: auto; }
+  .details { border-radius: 8px; border: 1px solid var(--color-border-subtle); flex-shrink: 0; }
+  .details > div { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 40px; padding: 0 12px; border-bottom: 1px solid var(--color-border-subtle); }
+  .details > div:last-child { border-bottom: 0; }
+  .details dt { color: var(--color-text-subtle); flex-shrink: 0; }
+  .details dd { margin: 0; color: var(--color-text-prominent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .details dd.mono { font-size: 13px; line-height: 18px; }
+  .overline { font-size: 11px; line-height: 16px; font-weight: 525; letter-spacing: 0.6px; text-transform: uppercase; color: var(--color-text-subtle); }
+  .raw-head { display: flex; align-items: center; justify-content: space-between; }
+  pre.json { margin: 8px 0 0; padding: 12px; border-radius: 8px; border: 1px solid var(--color-border-subtle); background: var(--color-surface-subtle); font-family: var(--font-mono); font-size: 11px; line-height: 17px; color: var(--color-text-normal); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+  @media (max-width: 1100px) {
+    .steps { display: none; }
+    .column, .column.wide { width: 100%; max-width: 1000px; margin: 0 auto; padding: 32px 24px 0; }
+  }
 </style>
 </head>
 <body>
-<div class="grain"></div>
-<main>
-  <header>
-    <div class="brand">
-      <p class="eyebrow">Migration · Ramp</p>
-      <h1>Ramp <em>Exporter</em></h1>
-      <p class="sub">Export your Ramp account into neutral files. Runs entirely on this machine — your credentials are used in memory and never sent anywhere but Ramp.</p>
-    </div>
-    <div class="badge">
-      <span class="dot"></span>
-      <span>LOCAL ONLY<small>creds stay on this device</small></span>
+<div class="app">
+  <header class="app-header">
+    <svg width="72" height="24" viewBox="0 0 96 32" role="img" aria-label="Slash" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M30.3976 28.8824V18.3088V17.4713L30.3746 16.0522L30.4322 0C28.1159 0.732816 25.4078 1.31442 22.4923 1.54706V1.83786C23.6446 2.3962 24.4052 2.96617 24.7509 3.53613C25.0858 4.08817 25.0855 5.30578 25.0852 7.11503V7.11506L25.0851 7.29329V26.6723C25.0851 26.6723 25.0851 26.7304 25.0966 26.7536V27.2771H25.0851C25.0851 27.2771 25.0851 27.3702 25.0966 27.405C25.0966 28.4636 25.0966 29.5337 25.1082 30.5922C25.1082 31.0575 25.477 31.4181 25.9263 31.4181H30.3861C30.6539 31.4181 30.9243 31.4143 31.1956 31.4104H31.1958H31.196H31.1961H31.1961H31.1962H31.1962C31.7416 31.4026 32.2905 31.3948 32.8291 31.4181L32.8637 31.1738C32.8356 31.1667 32.8074 31.1585 32.779 31.1503L32.7789 31.1502L32.7788 31.1502L32.7787 31.1502L32.7787 31.1502C32.714 31.1314 32.6476 31.1121 32.5756 31.104C30.9969 30.8947 30.4898 30.4177 30.3746 28.894L30.3976 28.8824ZM13.7461 8.57171C13.5732 8.59497 13.3312 8.73455 13.2852 8.88577C13.2505 9.01373 13.3543 9.31616 13.5271 9.37432C13.8613 9.49064 14.8869 9.58369 14.8869 9.58369C15.1289 9.61859 15.3595 9.63022 15.5438 9.63022C15.8562 9.63022 16.1324 9.64179 16.391 9.65262H16.391C17.0674 9.68094 17.6232 9.70422 18.3902 9.50227C21.0176 8.81598 21.5593 5.33801 20.6258 3.3024C19.7731 1.44128 18.0445 0.964363 16.2698 0.882932C13.6885 0.766617 11.0841 0.778248 8.50274 0.882932C7.58084 0.917826 6.58979 1.24353 5.7716 1.68555C3.91626 2.67427 3.43226 4.45397 3.46683 6.43141C3.48988 8.12969 3.92779 8.50191 5.61026 8.25764C5.7637 8.2358 5.91748 8.21328 6.07153 8.19072L6.07217 8.19062L6.07218 8.19062C6.82037 8.08105 7.57513 7.97052 8.32988 7.93195C8.87151 7.90868 9.30942 8.16459 9.29789 8.85088C9.27485 9.50227 8.90608 9.78144 8.31836 9.75818C7.94956 9.74267 7.58075 9.69613 7.21195 9.6496H7.21194H7.21193H7.21193C7.02759 9.62634 6.84326 9.60308 6.65893 9.58369C6.44645 9.56188 6.23396 9.53439 6.02148 9.5069L6.02146 9.5069C5.55404 9.44642 5.08663 9.38595 4.61921 9.38595C3.7434 9.38595 3.42074 9.89775 3.61665 10.7702C3.93931 12.1428 4.90731 12.8872 6.10579 13.3641C7.53471 13.9258 8.78694 14.3836 10.0995 14.8634C10.7982 15.1187 11.5139 15.3804 12.2826 15.6673C12.5707 15.7719 13.2736 16.1441 13.6078 16.3303C13.6078 16.3303 14.2992 16.7956 14.7026 17.0748C15.1174 17.3656 15.1866 18.0634 15.1981 18.5636C15.1981 19.1719 15.2002 19.7806 15.2024 20.3896C15.2113 22.9481 15.2203 25.5113 15.0714 28.067C14.8984 30.9518 13.1238 31.1727 11.1071 30.8354C10.3696 30.7191 9.96628 30.2306 9.7358 29.6024C9.62055 29.2767 9.56294 28.9394 9.55142 28.5905L9.39008 22.0067C9.3507 21.7718 9.32356 21.5347 9.29655 21.2989L9.29655 21.2988C9.23662 20.7754 9.1774 20.2581 8.98674 19.785C8.71017 19.0987 8.29531 18.3891 7.73065 17.9471C7.16598 17.5052 6.38236 17.226 5.65636 17.1329C4.21588 16.9583 2.83302 17.226 1.59998 18.1216C3.00588 18.3194 3.28245 19.3313 3.42074 20.4247C3.47102 20.7885 3.47255 21.1645 3.47407 21.5395C3.47464 21.6801 3.47521 21.8206 3.47836 21.9602V26.4153C3.5014 29.6257 5.54112 31.2891 8.29531 31.4636C10.8997 31.6148 13.5271 31.6148 16.143 31.4636C18.5861 31.324 20.6835 30.0328 20.9254 27.2876C21.1228 25.0232 21.0674 22.7303 21.0123 20.4517V20.4517C21.0063 20.2021 21.0003 19.9527 20.9946 19.7036C20.9715 18.4473 20.1995 17.5516 19.047 17.0979C17.8947 16.6444 16.7077 16.2489 15.5207 15.8882L13.504 15.2485C13.2014 15.111 12.8938 14.9823 12.5866 14.8538C11.9578 14.5907 11.3305 14.3282 10.7499 13.9922C9.83951 13.4688 9.4016 12.5731 9.28636 11.5146C9.21722 10.9446 9.33246 10.6423 9.98932 10.5375C11.1302 10.3514 11.5335 9.81633 11.4874 8.78109C11.4528 7.86216 11.0956 7.42014 10.1161 7.23403C9.47074 7.11771 9.14808 6.85016 9.26332 6.16387C9.31792 5.8148 9.35758 5.46108 9.39718 5.10786C9.48294 4.3429 9.56844 3.58024 9.80494 2.87201C10.2083 1.65065 11.3722 1.24353 12.9971 1.46454C14.1379 1.62739 14.8869 2.29042 15.0022 3.53504C15.1174 4.72151 15.1059 5.93123 15.0367 7.1177C14.9907 7.87379 14.6219 8.47865 13.7461 8.58334V8.57171ZM93.2943 28.8917C93.3979 30.4155 93.8819 30.8924 95.3686 31.1018L95.357 31.1251C95.4158 31.1325 95.47 31.1494 95.5255 31.1667C95.5433 31.1722 95.5612 31.1778 95.5795 31.1831C95.5882 31.1857 95.5971 31.1882 95.6061 31.1906C95.6114 31.1921 95.6167 31.1935 95.6221 31.1948L95.5874 31.4391C95.0809 31.4159 94.5692 31.4236 94.0558 31.4314H94.0556C93.7983 31.4353 93.5405 31.4391 93.2827 31.4391H89.065C88.6386 31.4391 88.2929 31.0785 88.2929 30.6132C88.2929 29.5547 88.2929 28.4846 88.2698 27.4261V24.3668V24.2738C88.2877 20.312 88.2986 19.2157 88.3026 18.8093V18.8089C88.3038 18.6894 88.3044 18.6297 88.3044 18.5741C88.3044 15.2358 87.1866 13.5724 84.928 13.5724C83.1879 13.5724 81.6091 14.5843 80.2032 16.6199V18.3298V28.9033C80.3185 30.4271 80.8254 30.904 82.4042 31.1134C82.4765 31.1215 82.5431 31.1409 82.608 31.1598C82.6363 31.168 82.6643 31.1762 82.6923 31.1832L82.6578 31.4274C82.1191 31.4042 81.5702 31.412 81.0247 31.4197H81.0246H81.0244C80.7531 31.4236 80.4826 31.4274 80.2147 31.4274H75.755C75.3055 31.4274 74.9367 31.0669 74.9367 30.6017C74.9253 29.5431 74.9253 28.4729 74.9253 27.4145C74.9138 27.3795 74.9138 27.2865 74.9138 27.2865H74.9253V26.7631C74.9138 26.7398 74.9138 26.6816 74.9138 26.6816V7.30266C74.9138 5.67418 74.9138 4.51097 74.7063 3.84795C74.6717 3.73163 74.6141 3.62694 74.5681 3.54552C74.2223 2.97554 73.4618 2.40558 72.3093 1.84723V1.55644C72.3612 1.55644 72.4102 1.55062 72.4592 1.5448C72.5082 1.53899 72.5571 1.53317 72.609 1.53317C75.4093 1.2889 78.0252 0.718926 80.2608 0.009375L80.2032 15.2358C82.1622 12.3161 84.5823 10.862 87.4632 10.862C89.0189 10.862 90.3903 11.3506 91.5426 12.3394C92.7065 13.328 93.2943 14.8402 93.2943 16.9107V24.297V28.8917ZM71.4413 13.5642C71.4375 13.4977 71.4349 13.4298 71.4323 13.3615V13.3614C71.4272 13.2268 71.4221 13.0905 71.4068 12.9593C71.1648 10.7028 70.0239 9.2255 68.2031 8.9347C64.988 8.42289 61.7614 8.43452 58.5462 8.96959C57.0366 9.2255 55.7689 10.0863 55.4924 11.6682C55.2158 13.2269 55.1467 14.8554 55.2504 16.4257C55.3656 18.1124 56.5641 18.9964 58.1429 19.2988C58.8121 19.426 59.4867 19.5097 60.1997 19.5982L60.1997 19.5982C60.5304 19.6392 60.8693 19.6813 61.2197 19.7292C66.1289 20.2526 65.9445 22.8582 65.9445 22.8582C66.0597 25.173 66.0136 27.4877 65.9445 29.8026C65.91 30.9076 65.207 31.4775 64.1007 31.559C64.0014 31.5649 63.8992 31.5678 63.7955 31.5707H63.7955C63.6945 31.5736 63.5922 31.5765 63.49 31.5823C61.2197 31.6056 60.6205 31.0589 60.5283 28.744C60.4938 27.8297 60.4965 26.9112 60.4993 25.9935V25.9934C60.5011 25.3817 60.5029 24.7704 60.4937 24.161C60.4822 22.9397 60.0789 22.3697 59.0993 22.044C58.5462 21.8579 57.947 21.951 57.463 22.265L54.5821 24.196C54.272 24.4072 53.9777 24.6447 53.6815 24.8837L53.6814 24.8838C53.5371 25.0002 53.3925 25.1169 53.2453 25.2312L53.3144 25.4405C53.4246 25.4482 53.5361 25.461 53.648 25.4737L53.6481 25.4737C53.8754 25.4997 54.1045 25.5259 54.3285 25.5103C54.8816 25.4871 55.0891 25.7197 55.1121 26.2664C55.1306 26.7988 55.2085 27.3236 55.2862 27.8469V27.847C55.3053 27.9755 55.3244 28.1038 55.3425 28.2322C55.5961 30.0352 56.5295 31.2333 58.2927 31.5706C61.5193 32.1754 64.7806 32.0824 68.0303 31.652C69.7934 31.4194 70.9689 30.3377 71.1878 28.5347C71.3953 26.8247 71.4529 25.0916 71.4183 23.3701C71.3837 21.8346 70.5886 20.6598 69.079 20.2526C68.2155 20.0164 67.3237 19.8886 66.4353 19.7613L66.435 19.7612C66.055 19.7068 65.6755 19.6524 65.2991 19.5896C64.6884 19.485 64.0661 19.3803 63.2824 19.2524C61.6116 18.915 61.1276 17.9961 61.1276 17.9961C60.8624 17.6121 60.609 17.112 60.609 16.67C60.609 14.6227 60.6666 12.5639 60.7703 10.5166C60.8048 9.71404 61.335 9.1906 62.1301 9.10917C62.9022 9.02775 63.6859 8.96959 64.4464 9.08591C65.472 9.23713 65.91 9.79546 65.9906 10.854C66.0597 11.8195 66.1059 12.7849 66.0943 13.7504C66.0828 14.7507 66.3018 15.5998 67.0277 16.1931C67.4657 16.542 68.0303 16.6816 68.5835 16.5769L72.467 15.8906V15.6697C71.4922 15.4117 71.4812 14.7145 71.4701 14.016C71.4677 13.8639 71.4653 13.7118 71.4529 13.5642H71.4413ZM50.7945 26.4598C50.7945 27.1926 50.7945 27.9371 50.829 28.6815L50.8521 28.7048C50.9328 30.4031 51.4168 30.9265 53.0647 31.1358C53.1367 31.144 53.2032 31.1633 53.2681 31.1822C53.2965 31.1904 53.3246 31.1986 53.3528 31.2057L53.3182 31.4499C52.8258 31.428 52.327 31.4337 51.8283 31.4395C49.6775 31.4641 47.531 31.4887 45.9314 29.298L45.8902 29.368C45.6932 29.7029 45.5523 29.9425 45.4013 30.182C44.779 31.1358 43.9493 31.7756 42.7853 31.7756C42.5638 31.7756 42.3421 31.7764 42.1202 31.7772C40.8646 31.7816 39.6057 31.7861 38.3717 31.6477C35.8826 31.3685 34.5804 29.9261 34.4652 27.2741C34.373 24.9244 34.396 22.5631 34.4421 20.2134C34.4767 18.4686 35.6982 17.0029 37.4268 16.7237C38.3244 16.577 39.2474 16.5776 40.1675 16.5782C40.4877 16.5784 40.8076 16.5786 41.126 16.5726L45.3667 16.6307V13.1876C45.3667 12.6526 45.3667 12.1175 45.3322 11.5824C45.1824 9.19786 44.1452 8.38361 41.7828 8.7791C40.4922 8.98848 39.962 9.54681 39.8929 10.8729C39.8583 11.2451 39.8583 11.6057 39.8583 11.9663C39.8699 12.0128 39.8699 12.0478 39.8699 12.0942C39.8853 12.2185 39.8904 12.3428 39.8955 12.467C39.8981 12.5289 39.9006 12.5907 39.9044 12.6526C39.9145 12.785 39.9161 12.921 39.9177 13.0568C39.9253 13.6964 39.9328 14.332 40.8263 14.5718V14.7813L38.222 15.2465C36.0216 15.7555 35.7359 15.7123 35.2794 15.6432L35.2718 15.642C34.6957 15.5489 34.4076 15.3047 34.3614 14.6881C34.3195 14.129 34.3264 13.5575 34.3333 12.9916C34.3358 12.7805 34.3384 12.5703 34.3384 12.3617C34.35 9.86089 35.8596 9.03501 37.6458 8.74421C40.8148 8.2324 44.0069 8.1975 47.199 8.67441C49.0428 8.94196 50.2643 10.1517 50.5179 12.0478C50.6676 13.2109 50.7829 14.3857 50.7829 15.5606C50.8076 18.154 50.8029 20.7533 50.7982 23.3501C50.7963 24.3872 50.7945 25.424 50.7945 26.4598ZM41.414 31.3918C41.9787 31.4615 42.5894 31.4732 43.1541 31.3918C44.6984 31.1591 45.8507 29.5073 45.6317 28.0417C45.4819 27.0879 45.3782 26.1225 45.3552 25.157C45.3229 23.7802 45.3302 22.3976 45.3374 21.0173C45.3405 20.4268 45.3436 19.8369 45.3436 19.2479C45.4243 17.41 44.8596 17.317 44.2835 17.2821C39.9159 16.9797 39.8353 17.4333 39.8353 18.8059C39.8209 20.9293 39.829 23.0526 39.8371 25.1759C39.8419 26.4492 39.8468 27.7224 39.8468 28.9956C39.8468 29.205 39.8583 29.4143 39.8814 29.6121C40.0312 30.6706 40.5152 31.2754 41.414 31.3918Z" fill="#10122A"/></svg>
+    <div class="actions">
+      <span class="local-tag">
+        <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5" fill="none" stroke="oklch(51.9% 0.015 82.4)" stroke-width="1.3"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="oklch(51.9% 0.015 82.4)" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Runs on this computer
+      </span>
+      <a class="btn outline" href="https://github.com/patrick-kimm/ramp-exporter" target="_blank" rel="noopener" style="text-decoration:none">View source</a>
     </div>
   </header>
 
-  <section class="panel reveal" id="form-panel">
-    <div class="panel-head"><span class="idx">01</span><h2>Connect</h2></div>
-    <div class="panel-body">
-      <div class="two">
-        <div class="field">
-          <label class="lbl" for="cid">Client ID</label>
-          <input id="cid" type="text" autocomplete="off" spellcheck="false" placeholder="ramp_id_…" />
+  <main class="layout">
+    <div class="progress"><div id="progress-fill" style="width:25%"></div></div>
+    <div class="body">
+      <nav class="steps" aria-label="Steps"><ol id="steps"></ol></nav>
+
+      <section class="column" id="column">
+        <h2 id="title"></h2>
+        <div class="scroll">
+
+          <!-- 1 · Connect -->
+          <div class="fields" id="pane-connect">
+            <div class="alert" id="connect-error" role="alert" hidden></div>
+            <p id="connect-intro" style="margin:0">Paste the Client ID and Client Secret from a read-only Ramp developer app. They’re held in memory on this computer and only ever sent to Ramp.</p>
+            <div class="field">
+              <label for="cid">Client ID <span class="req">*</span></label>
+              <div class="input"><input id="cid" type="text" autocomplete="off" spellcheck="false" placeholder="ramp_id_…" /></div>
+            </div>
+            <div class="field">
+              <label for="csec">Client Secret <span class="req">*</span></label>
+              <div class="input">
+                <input id="csec" type="password" autocomplete="off" spellcheck="false" placeholder="ramp_sec_…" />
+                <button class="icon-btn" id="toggle-secret" type="button" aria-label="Show secret">
+                  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8s-2.4 4.5-6.5 4.5S1.5 8 1.5 8Z" fill="none" stroke="oklch(51.9% 0.015 82.4)" stroke-width="1.3" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" fill="none" stroke="oklch(51.9% 0.015 82.4)" stroke-width="1.3"/></svg>
+                </button>
+              </div>
+              <span class="caption subtle">Never saved to disk or written to logs.</span>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                Create the app in Ramp
+                <a class="link" href="https://app.ramp.com" target="_blank" rel="noopener">Open Ramp
+                  <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5H3.5v9h9V10M9 2.5h4.5V7M13.5 2.5 7.5 8.5" fill="none" stroke="oklch(51.9% 0.135 248.6)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </a>
+              </div>
+              <ol class="setup-steps">
+                <li><span class="num">1</span>Go to Settings → Developer → Create app</li>
+                <li><span class="num">2</span>Choose Client credentials as the grant type</li>
+                <li><span class="num">3</span><div>Turn on all 10 read scopes<div class="scopes" id="scopes"></div></div></li>
+              </ol>
+            </div>
+          </div>
+
+          <!-- 2 · Choose data -->
+          <div class="fields" id="pane-choose" hidden>
+            <div class="alert" id="choose-error" role="alert" hidden></div>
+            <p style="margin:0">Everything is read-only. You can run the export again any time before you switch.</p>
+            <div class="choices" id="choices" role="group" aria-label="Categories"></div>
+            <div class="field" id="history-field">
+              <label for="history">Bill and transaction history</label>
+              <div class="input select">
+                <select id="history">
+                  <option value="all">All history</option>
+                  <option value="12m">Last 12 months</option>
+                  <option value="ytd">This year</option>
+                  <option value="custom">Custom range</option>
+                </select>
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="pointer-events:none"><path d="M13.424 5.576C13.19 5.342 12.811 5.342 12.576 5.576L8 10.151L3.424 5.576C3.19 5.342 2.81 5.342 2.575 5.576C2.34 5.81 2.341 6.19 2.575 6.425L7.575 11.425C7.693 11.541 7.847 11.6 8 11.6C8.153 11.6 8.307 11.541 8.424 11.424L13.424 6.424C13.658 6.19 13.658 5.81 13.424 5.576Z" fill="oklch(51.9% 0.015 82.4)"/></svg>
+              </div>
+              <div class="two" id="custom-range" hidden>
+                <div class="input"><input id="from" type="date" aria-label="From" /></div>
+                <div class="input"><input id="to" type="date" aria-label="To" /></div>
+              </div>
+              <span class="caption subtle" id="history-hint"></span>
+            </div>
+          </div>
+
+          <!-- 3 · Export -->
+          <div class="fields" id="pane-export" hidden>
+            <p style="margin:0">This usually takes a few minutes. Keep this tab open — files are saved as each one finishes.</p>
+            <div class="card">
+              <div class="card-head">Ramp account <span class="caption subtle" style="font-weight:450" id="files-done"></span></div>
+              <div class="rows" id="progress-rows"></div>
+            </div>
+          </div>
+
+          <!-- 4 · Review -->
+          <div class="fields" id="pane-review" hidden>
+            <div class="agg" id="agg"></div>
+            <div class="folder">
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="flex-shrink:0"><path d="M2 4.5c0-.55.45-1 1-1h3.1l1.4 1.5H13c.55 0 1 .45 1 1v6c0 .55-.45 1-1 1H3c-.55 0-1-.45-1-1v-7.5z" fill="none" stroke="oklch(51.9% 0.015 82.4)" stroke-width="1.3" stroke-linejoin="round"/></svg>
+              <code id="bundle-path"></code>
+              <button class="btn outline sm" id="copy-path" type="button">
+                <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><rect x="5.25" y="5.25" width="8" height="8" rx="1.5" fill="none" stroke="oklch(51.9% 0.015 82.4)" stroke-width="1.3"/><path d="M10.75 3.25v-.5c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h.5" fill="none" stroke="oklch(51.9% 0.015 82.4)" stroke-width="1.3" stroke-linecap="round"/></svg>
+                <span>Copy path</span>
+              </button>
+            </div>
+            <div class="tabs" id="tabs" role="tablist"></div>
+            <div class="pills" id="pills"></div>
+            <div class="table-card" id="table"></div>
+            <span class="caption subtle" id="table-caption"></span>
+          </div>
+
         </div>
-        <div class="field">
-          <label class="lbl" for="csec">Client Secret</label>
-          <input id="csec" type="password" autocomplete="off" spellcheck="false" placeholder="ramp_sec_…" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="lbl">Categories</label>
-        <div class="chips" id="chips">
-          <span class="chip" role="button" tabindex="0" aria-pressed="true" data-cat="users">Users</span>
-          <span class="chip" role="button" tabindex="0" aria-pressed="true" data-cat="cards">Cards</span>
-          <span class="chip" role="button" tabindex="0" aria-pressed="true" data-cat="vendors">Vendors</span>
-        </div>
-      </div>
-      <details class="adv">
-        <summary>Vendor ledger window (advanced)</summary>
-        <div class="adv-body two">
-          <div class="field"><label class="lbl" for="from">From</label><input id="from" type="date" /></div>
-          <div class="field"><label class="lbl" for="to">To</label><input id="to" type="date" /></div>
-        </div>
-      </details>
-      <div class="run-row">
-        <button class="run" id="run">Run export →</button>
-        <span class="lock-note"><b>Nothing is stored.</b> The export also writes the same files to a local folder you control.</span>
-      </div>
+        <footer class="flow-footer">
+          <button class="btn outline" id="back" type="button"></button>
+          <button class="btn cta" id="next" type="button"></button>
+        </footer>
+      </section>
     </div>
-  </section>
+  </main>
+</div>
 
-  <section class="panel" id="status" hidden>
-    <div class="panel-head"><span class="idx">··</span><h2>Working</h2></div>
-    <div class="panel-body" id="loglines"></div>
-  </section>
-
-  <section class="panel" id="error" hidden>
-    <div class="panel-head"><span class="idx">!!</span><h2>Couldn’t export</h2></div>
-    <div class="panel-body">
-      <div class="msg" id="errmsg"></div>
-      <div class="tip" id="errtip"></div>
-    </div>
-  </section>
-
-  <section class="panel" id="results" hidden>
-    <div class="panel-head"><span class="idx">02</span><h2>What we found</h2></div>
-    <div class="panel-body">
-      <div class="stats" id="stats"></div>
-      <div class="pathbar"><span class="pk">Bundle</span><code id="bundlepath"></code><button class="copybtn" id="copy">copy</button></div>
-      <div class="tabs" id="tabs"></div>
-      <div class="tabpanel" id="tabpanel"></div>
-    </div>
-  </section>
-
-  <footer>ramp-exporter · open source · runs locally · <a href="https://github.com/patrick-kimm/ramp-exporter">source</a></footer>
-</main>
+<div class="backdrop" id="drawer" hidden>
+  <div class="dim" data-close></div>
+  <button class="close" type="button" aria-label="Close" data-close>
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </button>
+  <aside class="panel" role="dialog" aria-modal="true" aria-labelledby="drawer-name" id="drawer-panel"></aside>
+</div>
 
 <script>
 const $ = (s, r = document) => r.querySelector(s);
-const RESOURCE_ORDER = ["users","departments","locations","entities","cards","spend-programs","funds","vendors","vendor_contacts","bills","transactions"];
-const COL_PRIORITY = ["id","name","display_name","entity_name","first_name","last_name","email","role","status","state","is_primary","last_four","amount","spend_program_id","vendor_id","cardholder_id","department_id","location_id","entity_id","payment_method","created_at"];
 
-// default date window: last 90 days
-(function initDates(){
-  const fmt = (d) => d.toISOString().slice(0,10);
-  const now = new Date(); const past = new Date(now.getTime() - 90*864e5);
-  $("#to").value = fmt(now); $("#from").value = fmt(past);
-})();
+const SCOPES = ["users:read", "departments:read", "locations:read", "entities:read", "cards:read", "spend_programs:read", "funds:read", "vendors:read", "bills:read", "transactions:read"];
+const CATEGORIES = [
+  { id: "users", label: "Users", desc: "People, departments, locations, and entities", resources: ["users", "departments", "locations", "entities"],
+    icon: '<circle cx="7.5" cy="7" r="3"/><path d="M2 16c.6-2.6 2.8-4.3 5.5-4.3S12.4 13.4 13 16" stroke-linecap="round"/><path d="M13 4.3a3 3 0 0 1 0 5.4M15 11.9c1.5.6 2.6 2 3 4.1" stroke-linecap="round"/>' },
+  { id: "cards", label: "Cards", desc: "Cards, spend programs, and funds", resources: ["cards", "spend-programs", "funds"],
+    icon: '<rect x="2.5" y="4.5" width="15" height="11" rx="2"/><path d="M2.5 8h15M5.5 12.5h3" stroke-linecap="round"/>' },
+  { id: "vendors", label: "Vendors", desc: "Vendors, contacts, bills, and transactions", resources: ["vendors", "vendor_contacts", "bills", "transactions"],
+    icon: '<path d="M3 8.5V16.5h14V8.5M2.5 4h15l-1 4.5H3.5L2.5 4Z" stroke-linejoin="round"/><path d="M8 16.5v-4h4v4" stroke-linejoin="round"/>' },
+];
+const RESOURCE = {
+  users: { label: "Users", one: "User" },
+  departments: { label: "Departments", one: "Department" },
+  locations: { label: "Locations", one: "Location" },
+  entities: { label: "Business entities", one: "Business entity" },
+  cards: { label: "Cards", one: "Card" },
+  "spend-programs": { label: "Spend programs", one: "Spend program" },
+  funds: { label: "Funds", one: "Fund" },
+  vendors: { label: "Vendors", one: "Vendor" },
+  vendor_contacts: { label: "Vendor contacts", one: "Vendor contact" },
+  bills: { label: "Bills", one: "Bill" },
+  transactions: { label: "Card transactions", one: "Card transaction" },
+};
+const STEPS = [
+  { id: "connect", label: "Connect Ramp", title: "Connect your Ramp account" },
+  { id: "choose", label: "Choose data", title: "Choose what to export" },
+  { id: "export", label: "Export", title: "Exporting from Ramp" },
+  { id: "review", label: "Review", title: "Your export is ready" },
+];
+const TABLE_LIMIT = 100;
 
-// chips
-$("#chips").addEventListener("click", (e) => {
-  const c = e.target.closest(".chip"); if (!c) return;
-  c.setAttribute("aria-pressed", c.getAttribute("aria-pressed") === "true" ? "false" : "true");
-});
-$("#chips").addEventListener("keydown", (e) => {
-  if ((e.key === " " || e.key === "Enter") && e.target.classList.contains("chip")) { e.preventDefault(); e.target.click(); }
-});
+const ICON = {
+  current: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="oklch(65.2% 0.131 91.7)" stroke-width="1.5"/><circle cx="8" cy="8" r="6.25" fill="none" stroke="oklch(65.2% 0.131 91.7)" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="20 40"/></svg>',
+  done: '<svg width="20" height="20" viewBox="0 0 16 16" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M8 1.5C6.714 1.5 5.458 1.881 4.389 2.595C3.32 3.31 2.487 4.325 1.995 5.513C1.503 6.7 1.374 8.007 1.625 9.268C1.876 10.529 2.495 11.687 3.404 12.596C4.313 13.505 5.471 14.124 6.732 14.375C7.993 14.626 9.3 14.497 10.487 14.005C11.675 13.513 12.69 12.68 13.405 11.611C14.119 10.542 14.5 9.286 14.5 8C14.498 6.277 13.813 4.624 12.594 3.406C11.376 2.187 9.723 1.502 8 1.5ZM9.991 6.02C10.284 5.727 10.757 5.726 11.05 6.02C11.342 6.313 11.343 6.788 11.05 7.08L7.55 10.58C7.404 10.726 7.211 10.8 7.02 10.8C6.829 10.8 6.636 10.726 6.49 10.582L4.989 9.081C4.697 8.788 4.695 8.313 4.99 8.02C5.283 7.728 5.757 7.727 6.05 8.02L7.02 8.989L9.991 6.02Z" fill="oklch(50.3% 0.152 144.4)"/></svg>',
+  upcoming: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="oklch(91.3% 0.008 91.6)" stroke-width="1.5"/></svg>',
+  rowDone: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="oklch(50.3% 0.152 144.4)"/><path d="M5 8.2l2 2 4-4.2" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  rowRunning: '<svg class="spin" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="oklch(91.3% 0.008 91.6)" stroke-width="1.5"/><path d="M8 1.75a6.25 6.25 0 0 1 6.25 6.25" fill="none" stroke="oklch(65.2% 0.131 91.7)" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  alert: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="oklch(67.31% 0.167 20.06)" stroke-width="1.5"/><path d="M8 4.75v3.75" stroke="oklch(67.31% 0.167 20.06)" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="10.9" r="0.85" fill="oklch(67.31% 0.167 20.06)"/></svg>',
+  copy: '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><rect x="5.25" y="5.25" width="8" height="8" rx="1.5" fill="none" stroke="oklch(51.9% 0.015 82.4)" stroke-width="1.3"/><path d="M10.75 3.25v-.5c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h.5" fill="none" stroke="oklch(51.9% 0.015 82.4)" stroke-width="1.3" stroke-linecap="round"/></svg>',
+};
 
-const STEPS = ["authenticating with ramp", "fetching records", "writing bundle", "summarizing"];
-let logTimer = null;
-function startLog() {
-  const box = $("#loglines"); box.innerHTML = ""; let i = 0;
-  const draw = () => {
-    box.innerHTML = STEPS.map((s, idx) => {
-      const done = idx < i, cur = idx === i;
-      return '<div class="logline ' + (cur ? "cur" : "") + '" style="animation-delay:' + (idx*60) + 'ms"><span class="tick">' + (done ? "✓" : cur ? "▸" : "·") + '</span><span>' + s + (cur ? "…" : "") + '</span></div>';
-    }).join("");
-  };
-  draw();
-  logTimer = setInterval(() => { if (i < STEPS.length - 1) { i++; draw(); } }, 850);
+const state = {
+  step: "connect",
+  busy: false,
+  selected: new Set(CATEGORIES.map((c) => c.id)),
+  rows: [],
+  abort: null,
+  result: null,
+  exportedAt: null,
+  tab: null,
+  resource: null,
+};
+
+// ---------- formatting ----------
+function esc(v) {
+  return String(v).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 }
-function stopLog(){ clearInterval(logTimer); }
+const fmtCount = (n) => Number(n).toLocaleString("en-US");
+function parseDate(v) {
+  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}/.test(v)) return null;
+  const d = new Date(v.length === 10 ? `${v}T00:00:00` : v);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+function fmtShortDate(v) {
+  const d = parseDate(v);
+  return d ? d.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "2-digit" }) : null;
+}
+function fmtLongDate(v) {
+  const d = parseDate(v);
+  return d ? d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : null;
+}
+/** Ramp CurrencyAmount objects are minor units; bare numbers (transactions) are major units. */
+function money(v, currency) {
+  let amount = null, code = currency || "USD";
+  if (v && typeof v === "object" && typeof v.amount === "number") { amount = v.amount / 100; code = v.currency_code || code; }
+  else if (typeof v === "number") amount = v;
+  if (amount === null) return null;
+  try { return { text: new Intl.NumberFormat("en-US", { style: "currency", currency: code }).format(amount), code }; }
+  catch { return { text: amount.toFixed(2), code }; }
+}
+function humanize(v) {
+  return String(v).toLowerCase().replace(/_/g, " ").replace(/^\w/, (m) => m.toUpperCase());
+}
+function tone(v) {
+  const s = String(v).toUpperCase();
+  if (/^(PAID|ACTIVE|CLEARED|COMPLETED|APPROVED|ENABLED|VERIFIED)$/.test(s)) return "success";
+  if (/^(OPEN|PENDING|UNPAID|AWAITING|DRAFT|INVITE_PENDING|PENDING_APPROVAL|OVERDUE)/.test(s)) return "warning";
+  if (/^(TERMINATED|SUSPENDED|DECLINED|REJECTED|FAILED|CANCELED|CANCELLED|VOIDED|DELETED|DISABLED)$/.test(s)) return "danger";
+  return "";
+}
+const get = (o, path) => path.split(".").reduce((v, k) => (v == null ? undefined : v[k]), o);
+function pick(o, ...paths) {
+  for (const p of paths) { const v = get(o, p); if (v !== undefined && v !== null && v !== "") return v; }
+  return null;
+}
+const fullName = (o) => (o ? [o.first_name, o.last_name].filter(Boolean).join(" ") || null : null);
 
-$("#run").addEventListener("click", run);
-async function run() {
-  const clientId = $("#cid").value.trim();
-  const clientSecret = $("#csec").value.trim();
-  const categories = [...document.querySelectorAll('.chip[aria-pressed=true]')].map(c => c.dataset.cat);
-  if (!clientId || !clientSecret) return flashError("Enter both your Client ID and Client Secret.", "These come from your Ramp app under Settings → Developer.");
-  if (!categories.length) return flashError("Pick at least one category to export.", "");
+// ---------- steps ----------
+function stepIndex(id) { return STEPS.findIndex((s) => s.id === id); }
 
-  const btn = $("#run"); btn.disabled = true; btn.classList.add("loading"); btn.textContent = "Exporting…";
-  $("#error").hidden = true; $("#results").hidden = true;
-  $("#status").hidden = false; $("#status").classList.add("reveal"); startLog();
+function goTo(step) {
+  state.step = step;
+  const idx = stepIndex(step);
+  $("#progress-fill").style.width = `${((idx + 1) / STEPS.length) * 100}%`;
+  $("#title").textContent = STEPS[idx].title;
+  $("#column").classList.toggle("wide", step === "review");
+  for (const s of STEPS) $(`#pane-${s.id}`).hidden = s.id !== step;
+  renderSteps();
+  renderFooter();
+  $(".scroll").scrollTop = 0;
+}
 
+function renderSteps() {
+  const cur = stepIndex(state.step);
+  const locked = state.step === "export" || state.busy;
+  $("#steps").innerHTML = STEPS.map((s, i) => {
+    const st = i < cur ? "done" : i === cur ? "current" : "upcoming";
+    const disabled = st !== "done" || locked || s.id === "export";
+    return `<li><button class="step" type="button" data-step="${s.id}" data-state="${st}" ${disabled ? "disabled" : ""} ${st === "current" ? 'aria-current="step"' : ""}><span class="ico">${ICON[st]}</span>${esc(s.label)}</button></li>`;
+  }).join("");
+}
+$("#steps").addEventListener("click", (e) => {
+  const b = e.target.closest(".step");
+  if (b && !b.disabled) goTo(b.dataset.step);
+});
+
+function renderFooter() {
+  const back = $("#back"), next = $("#next");
+  back.hidden = false; back.disabled = false; next.disabled = state.busy;
+  switch (state.step) {
+    case "connect":
+      back.hidden = true;
+      next.textContent = state.busy ? "Checking…" : $("#connect-error").hidden ? "Next" : "Try again";
+      break;
+    case "choose":
+      back.textContent = "Back";
+      next.textContent = "Start export";
+      next.disabled = state.busy || state.selected.size === 0;
+      break;
+    case "export":
+      back.textContent = "Cancel";
+      next.textContent = "Exporting…";
+      next.disabled = true;
+      break;
+    case "review":
+      back.textContent = "Export again";
+      next.textContent = "Open folder";
+      break;
+  }
+}
+$("#back").addEventListener("click", () => {
+  switch (state.step) {
+    case "choose": return goTo("connect");
+    case "export": return cancelExport();
+    case "review": return goTo("choose");
+  }
+});
+$("#next").addEventListener("click", () => {
+  switch (state.step) {
+    case "connect": return connect();
+    case "choose": return startExport();
+    case "review": return revealFolder();
+  }
+});
+
+// ---------- errors ----------
+function errorCopy(err) {
+  const status = err.status;
+  const scopes = err.missingScopes || [];
+  if (err.network) {
+    return { title: "Couldn’t reach the exporter", desc: "Is ramp-exporter ui still running in your terminal? Start it again, then retry." };
+  }
+  if (status === 401 || /invalid_client/i.test(err.rampSays || "")) {
+    return { title: `Ramp didn’t recognize these credentials (${status || 401})`, desc: "Copy the Client ID and Client Secret again from the app in Ramp, then try again." };
+  }
+  if (status === 403 && scopes.length) {
+    const list = scopes.join(", ");
+    return { title: "Ramp turned down this app (403)", desc: `Turn on ${list} for this app in Ramp, then try again. Your Client ID and Secret don’t change.` };
+  }
+  if (status === 403) {
+    return { title: "Ramp turned down this app (403)", desc: "The app is missing one or more of the 10 read scopes below. Turn them all on in Ramp, then try again." };
+  }
+  if (status === 422) {
+    return { title: "Ramp rejected the date range (422)", desc: "Pick a different history range, or export all history." };
+  }
+  return { title: "Something went wrong talking to Ramp", desc: err.error || "Try again in a moment." };
+}
+function showError(el, err) {
+  const { title, desc } = errorCopy(err);
+  el.innerHTML = `${ICON.alert}<div class="body-col"><span class="title">${esc(title)}</span><span class="desc">${esc(desc)}</span>${
+    err.rampSays ? `<span class="raw">Ramp says: ${esc(err.rampSays)}</span>` : ""}</div>`;
+  el.hidden = false;
+}
+function isAuthError(err) { return err.status === 401 || err.status === 403 || err.network; }
+
+function showConnectError(err) {
+  showError($("#connect-error"), err);
+  $("#connect-intro").hidden = true;
+  renderScopes(err.missingScopes || []);
+}
+function clearConnectError() {
+  $("#connect-error").hidden = true;
+  $("#connect-intro").hidden = false;
+  renderScopes([]);
+}
+
+// ---------- 1 · connect ----------
+function renderScopes(missing) {
+  $("#scopes").innerHTML = SCOPES.map((s) => `<span class="scope${missing.includes(s) ? " missing" : ""}">${s}</span>`).join("");
+}
+function credentials() {
+  return { clientId: $("#cid").value.trim(), clientSecret: $("#csec").value.trim() };
+}
+$("#toggle-secret").addEventListener("click", () => {
+  const input = $("#csec"), show = input.type === "password";
+  input.type = show ? "text" : "password";
+  $("#toggle-secret").setAttribute("aria-label", show ? "Hide secret" : "Show secret");
+});
+for (const id of ["#cid", "#csec"]) {
+  $(id).addEventListener("keydown", (e) => { if (e.key === "Enter") connect(); });
+}
+
+async function postJson(path, body) {
+  let res;
+  try {
+    res = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  } catch {
+    return { ok: false, network: true };
+  }
+  return res.json();
+}
+
+async function connect() {
+  if (state.busy) return;
+  const creds = credentials();
+  if (!creds.clientId || !creds.clientSecret) {
+    return showConnectError({ error: "Enter both your Client ID and Client Secret." });
+  }
+  state.busy = true; renderFooter();
+  const data = await postJson("/api/connect", creds);
+  state.busy = false;
+  if (!data.ok) { showConnectError(data); renderFooter(); return; }
+  clearConnectError();
+  goTo("choose");
+}
+
+// ---------- 2 · choose ----------
+function renderChoices() {
+  $("#choices").innerHTML = CATEGORIES.map((c) => `
+    <button class="choice" type="button" role="checkbox" aria-checked="${state.selected.has(c.id)}" data-cat="${c.id}">
+      <span class="tile"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="oklch(31.2% 0.009 97.7)" stroke-width="1.4" aria-hidden="true">${c.icon}</svg></span>
+      <span class="text"><span class="label">${esc(c.label)}</span><span>${esc(c.desc)}</span></span>
+      <span class="radio" aria-hidden="true"></span>
+    </button>`).join("");
+  $("#history-field").hidden = !state.selected.has("vendors");
+}
+$("#choices").addEventListener("click", (e) => {
+  const b = e.target.closest(".choice");
+  if (!b) return;
+  const id = b.dataset.cat;
+  state.selected.has(id) ? state.selected.delete(id) : state.selected.add(id);
+  renderChoices(); renderFooter();
+});
+
+const HISTORY_HINT = {
+  all: "Everything since your Ramp account opened.",
+  "12m": "Bills issued and transactions made in the last 12 months.",
+  ytd: "Bills issued and transactions made since January 1.",
+  custom: "Bills issued and transactions made between these dates.",
+};
+function isoDay(d) { return d.toISOString().slice(0, 10); }
+function dateRange() {
+  const v = $("#history").value, today = new Date();
+  switch (v) {
+    case "all": return undefined;
+    case "12m": { const from = new Date(today); from.setFullYear(from.getFullYear() - 1); return { from: isoDay(from), to: isoDay(today) }; }
+    case "ytd": return { from: `${today.getFullYear()}-01-01`, to: isoDay(today) };
+    case "custom": return { from: $("#from").value, to: $("#to").value };
+  }
+}
+$("#history").addEventListener("change", () => {
+  const v = $("#history").value;
+  $("#custom-range").hidden = v !== "custom";
+  $("#history-hint").textContent = HISTORY_HINT[v];
+});
+
+// ---------- 3 · export ----------
+function renderProgress() {
+  const done = state.rows.filter((r) => r.state === "done").length;
+  $("#files-done").textContent = `${done} of ${state.rows.length} files`;
+  $("#progress-rows").innerHTML = state.rows.map((r) => {
+    let meta = "Waiting";
+    if (r.state === "done") meta = fmtCount(r.count);
+    else if (r.state === "running") meta = r.total ? `${fmtCount(r.done)} of ${fmtCount(r.total)} vendors` : "Fetching…";
+    const icon = r.state === "done" ? ICON.rowDone : r.state === "running" ? ICON.rowRunning : ICON.upcoming;
+    return `<div class="prow" data-state="${r.state}"><span class="ico">${icon}</span><span class="name">${esc(RESOURCE[r.name]?.label || r.name)}</span><span class="meta">${meta}</span></div>`;
+  }).join("");
+}
+
+function onProgress(e) {
+  const row = state.rows.find((r) => r.name === e.resource);
+  switch (e.type) {
+    case "plan":
+      state.rows = e.resources.map((name) => ({ name, state: "waiting" }));
+      break;
+    case "resource_start":
+      if (row) row.state = "running";
+      break;
+    case "resource_progress":
+      if (row) Object.assign(row, { done: e.done, total: e.total });
+      break;
+    case "resource_done":
+      if (row) Object.assign(row, { state: "done", count: e.count });
+      break;
+  }
+  renderProgress();
+}
+
+async function startExport() {
+  if (state.busy || state.selected.size === 0) return;
+  const range = dateRange();
+  if (range && (!range.from || !range.to || range.from > range.to)) {
+    return showError($("#choose-error"), { error: "Pick a start and end date, with the start before the end." });
+  }
+  $("#choose-error").hidden = true;
+  const categories = CATEGORIES.filter((c) => state.selected.has(c.id)).map((c) => c.id);
+  state.rows = CATEGORIES.filter((c) => state.selected.has(c.id)).flatMap((c) => c.resources).map((name) => ({ name, state: "waiting" }));
+  renderProgress();
+  goTo("export");
+
+  state.abort = new AbortController();
+  let outcome;
   try {
     const res = await fetch("/api/export", {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ clientId, clientSecret, categories, dateRange: { from: $("#from").value, to: $("#to").value } })
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/x-ndjson" },
+      body: JSON.stringify({ ...credentials(), categories, dateRange: range }),
+      signal: state.abort.signal,
     });
-    const data = await res.json();
-    stopLog(); $("#status").hidden = true;
-    if (!data.ok) return flashError(data.error || "Export failed.", hintFor(data.error || ""));
-    render(data);
+    if (!res.headers.get("content-type")?.includes("ndjson")) {
+      outcome = await res.json();
+    } else {
+      outcome = await readStream(res);
+    }
   } catch (err) {
-    stopLog(); $("#status").hidden = true;
-    flashError("Couldn’t reach the local exporter (" + err.message + ").", "Is the `ramp-exporter ui` process still running?");
+    if (err.name === "AbortError") return;
+    outcome = { ok: false, network: true };
   } finally {
-    btn.disabled = false; btn.classList.remove("loading"); btn.textContent = "Run export →";
+    state.abort = null;
+  }
+  if (outcome?.ok) return showReview(outcome);
+  const err = outcome || { ok: false, error: "The export ended without a result." };
+  if (isAuthError(err)) { showConnectError(err); goTo("connect"); }
+  else { showError($("#choose-error"), err); goTo("choose"); }
+}
+
+async function readStream(res) {
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+  let buf = "", outcome = null;
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += value;
+    let nl;
+    while ((nl = buf.indexOf("\n")) >= 0) {
+      const line = buf.slice(0, nl); buf = buf.slice(nl + 1);
+      if (!line.trim()) continue;
+      const e = JSON.parse(line);
+      if (e.type === "result" || e.type === "error") outcome = e;
+      else onProgress(e);
+    }
+  }
+  return outcome;
+}
+
+function cancelExport() {
+  state.abort?.abort();
+  goTo("choose");
+}
+
+// ---------- 4 · review ----------
+function lookups(resources) {
+  const by = (name, label) => new Map((resources[name] || []).map((r) => [r.id, label(r)]));
+  return {
+    users: by("users", fullName),
+    departments: by("departments", (r) => r.name),
+    entities: by("entities", (r) => r.entity_name || r.name),
+    vendors: by("vendors", (r) => r.name),
+    spendPrograms: by("spend-programs", (r) => r.display_name || r.name),
+  };
+}
+
+/** Curated columns per resource; any column that's empty for every row is dropped. */
+const COLUMNS = {
+  users: [
+    { label: "Name", kind: "name", w: 2, value: (r) => fullName(r) },
+    { label: "Email", w: 2.4, value: (r) => r.email },
+    { label: "Role", kind: "enum", w: 1.2, value: (r) => r.role },
+    { label: "Department", w: 1.4, value: (r, l) => l.departments.get(r.department_id) },
+    { label: "Status", kind: "status", w: 1.1, value: (r) => r.status },
+  ],
+  departments: [
+    { label: "Name", kind: "name", w: 3, value: (r) => r.name },
+    { label: "Ramp ID", kind: "mono", w: 3, value: (r) => r.id },
+  ],
+  locations: [
+    { label: "Name", kind: "name", w: 2.5, value: (r) => r.name },
+    { label: "Entity", w: 2, value: (r, l) => l.entities.get(r.entity_id) },
+    { label: "Ramp ID", kind: "mono", w: 2.5, value: (r) => r.id },
+  ],
+  entities: [
+    { label: "Name", kind: "name", w: 2.5, value: (r) => r.entity_name || r.name },
+    { label: "Currency", w: 1, value: (r) => r.currency },
+    { label: "Ramp ID", kind: "mono", w: 2.5, value: (r) => r.id },
+  ],
+  cards: [
+    { label: "Card", kind: "name", w: 2, value: (r) => r.display_name },
+    { label: "Cardholder", w: 1.8, value: (r, l) => r.cardholder_name || l.users.get(r.cardholder_id) },
+    { label: "Last 4", kind: "mono", w: 0.8, value: (r) => r.last_four },
+    { label: "Type", w: 0.9, value: (r) => (typeof r.is_physical === "boolean" ? (r.is_physical ? "Physical" : "Virtual") : null) },
+    { label: "Status", kind: "status", w: 1.1, value: (r) => r.state },
+  ],
+  "spend-programs": [
+    { label: "Name", kind: "name", w: 2.2, value: (r) => r.display_name || r.name },
+    { label: "Description", w: 3, value: (r) => r.description },
+    { label: "Ramp ID", kind: "mono", w: 2, value: (r) => r.id },
+  ],
+  funds: [
+    { label: "Name", kind: "name", w: 2.4, value: (r) => r.display_name || r.name },
+    { label: "Spend program", w: 2, value: (r, l) => l.spendPrograms.get(r.spend_program_id) },
+    { label: "Ramp ID", kind: "mono", w: 2, value: (r) => r.id },
+  ],
+  vendors: [
+    { label: "Vendor", kind: "name", w: 2.6, value: (r) => r.name },
+    { label: "Entity", w: 1.6, value: (r, l) => l.entities.get(r.entity_id) },
+    { label: "Created", kind: "date", w: 1, value: (r) => r.created_at },
+    { label: "Ramp ID", kind: "mono", w: 2, value: (r) => r.id },
+  ],
+  vendor_contacts: [
+    { label: "Name", kind: "name", w: 2, value: (r) => fullName(r) || r.name },
+    { label: "Email", w: 2.2, value: (r) => r.email },
+    { label: "Phone", w: 1.3, value: (r) => r.phone },
+    { label: "Vendor", w: 1.6, value: (r, l) => l.vendors.get(r.vendor_id) },
+  ],
+  bills: [
+    { label: "Vendor", kind: "name", w: 2.1, value: (r, l) => pick(r, "vendor.remote_name", "vendor.name", "vendor_name") || l.vendors.get(pick(r, "vendor.id", "vendor_id")) },
+    { label: "Invoice", kind: "mono", w: 1.3, value: (r) => r.invoice_number },
+    { label: "Issued", kind: "date", w: 1, value: (r) => r.issued_at },
+    { label: "Due", kind: "date", w: 1, value: (r) => r.due_at },
+    { label: "Amount", kind: "money", w: 1.2, value: (r) => r.amount },
+    { label: "Status", kind: "status", w: 1, value: (r) => r.payment_status || r.status },
+  ],
+  transactions: [
+    { label: "Merchant", kind: "name", w: 2.2, value: (r) => r.merchant_name },
+    { label: "Date", kind: "date", w: 1, value: (r) => r.user_transaction_time },
+    { label: "Cardholder", w: 1.6, value: (r, l) => fullName(r.card_holder) || l.users.get(r.card_holder?.user_id) },
+    { label: "Amount", kind: "money", w: 1.2, value: (r) => (typeof r.amount === "number" ? { major: r.amount, currency: r.currency_code } : r.amount) },
+    { label: "Status", kind: "status", w: 1, value: (r) => r.state },
+  ],
+};
+const GENERIC_PRIORITY = ["name", "display_name", "entity_name", "email", "role", "status", "state", "amount", "created_at", "id"];
+
+function columnsFor(resource, rows, l) {
+  const spec = (COLUMNS[resource] || []).filter((c) => rows.some((r) => c.value(r, l) != null && c.value(r, l) !== ""));
+  if (spec.length >= 2) return spec;
+  const keys = new Set();
+  for (const r of rows.slice(0, 50)) for (const k in r) if (r[k] === null || ["string", "number", "boolean"].includes(typeof r[k])) keys.add(k);
+  const ordered = [...GENERIC_PRIORITY.filter((k) => keys.has(k)), ...[...keys].sort().filter((k) => !GENERIC_PRIORITY.includes(k))].slice(0, 6);
+  return ordered.map((k, i) => ({ label: humanize(k), kind: i === 0 ? "name" : k === "id" || k.endsWith("_id") ? "mono" : "", w: 1, value: (r) => r[k] }));
+}
+
+function cellHtml(col, v) {
+  if (v === null || v === undefined || v === "") return '<span class="subtle">—</span>';
+  switch (col.kind) {
+    case "name": {
+      const s = String(v);
+      return `<span class="who"><span class="letter">${esc(s.trim()[0]?.toUpperCase() || "?")}</span><span>${esc(s)}</span></span>`;
+    }
+    case "mono": return `<span class="mono">${esc(v)}</span>`;
+    case "date": return esc(fmtShortDate(v) || v);
+    case "money": {
+      const m = v && typeof v === "object" && "major" in v ? money(v.major, v.currency) : money(v);
+      return m ? esc(m.text) : '<span class="subtle">—</span>';
+    }
+    case "status": return `<span class="tag ${tone(v)}">${esc(humanize(v))}</span>`;
+    case "enum": return esc(humanize(v));
+    default: return esc(typeof v === "object" ? JSON.stringify(v) : v);
   }
 }
 
-function hintFor(msg) {
-  if (/not allowed for this client|scope/i.test(msg)) return "Your Ramp app is missing a scope. Enable the read scopes (users:read, cards:read, limits:read, vendors:read, …) under Settings → Developer.";
-  if (/auth failed|401|invalid_client/i.test(msg)) return "Double-check the Client ID / Secret — they’re for a Client-Credentials app.";
-  if (/datetime|422/i.test(msg)) return "A date filter was rejected by Ramp.";
-  return "";
-}
-function flashError(msg, tip) {
-  $("#errmsg").textContent = msg; $("#errtip").textContent = tip || "";
-  const e = $("#error"); e.hidden = false; e.classList.remove("reveal"); void e.offsetWidth; e.classList.add("reveal");
+function showReview(result) {
+  state.result = result;
+  state.exportedAt = new Date();
+  state.lookups = lookups(result.resources || {});
+  const present = CATEGORIES.filter((c) => c.resources.some((r) => r in (result.resources || {})));
+  state.tab = present[0]?.id || null;
+  state.resource = null;
+  renderReview();
+  goTo("review");
 }
 
-let TABS = [];
-function render(data) {
-  const counts = data.counts || {};
-  const present = RESOURCE_ORDER.filter(r => r in (data.resources || {}));
-  // stats
-  $("#stats").innerHTML = present.map(r => {
-    const n = counts[r] ?? (data.resources[r] || []).length;
-    return '<div class="stat"><div class="n ' + (n === 0 ? "zero" : "") + '">' + n + '</div><div class="k">' + label(r) + '</div></div>';
+function count(name) {
+  const r = state.result;
+  return r.counts?.[name] ?? (r.resources?.[name] || []).length;
+}
+
+function renderReview() {
+  const r = state.result;
+  const names = Object.keys(r.resources || {});
+  const total = names.reduce((s, n) => s + count(n), 0);
+  const entity = (r.resources?.entities || [])[0];
+  const entityName = entity ? entity.entity_name || entity.name : null;
+  const when = state.exportedAt.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+  const dot = '<span class="subtle">·</span>';
+  $("#agg").innerHTML = [`<b>${fmtCount(total)}</b> records`, `<b>${names.length}</b> files`, entityName && esc(entityName), esc(when)]
+    .filter(Boolean).join(dot);
+  $("#bundle-path").textContent = r.bundleDir || "";
+  $("#bundle-path").title = r.bundleDir || "";
+
+  const present = CATEGORIES.filter((c) => c.resources.some((n) => n in r.resources));
+  $("#tabs").innerHTML = present.map((c) => {
+    const n = c.resources.reduce((s, x) => s + (x in r.resources ? count(x) : 0), 0);
+    return `<button class="tab" type="button" role="tab" aria-selected="${c.id === state.tab}" data-tab="${c.id}">${esc(c.label)} <span class="count">${fmtCount(n)}</span></button>`;
   }).join("");
-  // path
-  $("#bundlepath").textContent = data.bundleDir || "";
-  $("#copy").onclick = () => { navigator.clipboard?.writeText(data.bundleDir || ""); $("#copy").textContent = "copied"; setTimeout(() => $("#copy").textContent = "copy", 1400); };
-  // tabs
-  TABS = present;
-  $("#tabs").innerHTML = present.map((r, i) => {
-    const n = counts[r] ?? (data.resources[r] || []).length;
-    return '<button class="tab ' + (n===0?"empty":"") + '" role="tab" aria-selected="' + (i===0) + '" data-r="' + r + '">' + label(r) + '<span class="cnt">' + n + '</span></button>';
-  }).join("");
-  $("#tabs").querySelectorAll(".tab").forEach(t => t.onclick = () => selectTab(t.dataset.r, data));
-  if (present.length) selectTab(present[0], data);
-  const R = $("#results"); R.hidden = false; R.classList.remove("reveal"); void R.offsetWidth; R.classList.add("reveal");
-  R.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  const cat = CATEGORIES.find((c) => c.id === state.tab);
+  const resources = cat ? cat.resources.filter((n) => n in r.resources) : [];
+  if (!resources.includes(state.resource)) state.resource = resources.find((n) => count(n) > 0) || resources[0] || null;
+  $("#pills").innerHTML = resources.map((n) =>
+    `<button class="pill" type="button" aria-pressed="${n === state.resource}" data-resource="${n}">${esc(RESOURCE[n]?.label || n)} <span class="n">${fmtCount(count(n))}</span></button>`).join("");
+  renderTable();
+}
+$("#tabs").addEventListener("click", (e) => {
+  const t = e.target.closest(".tab");
+  if (!t) return;
+  state.tab = t.dataset.tab; state.resource = null;
+  renderReview();
+});
+$("#pills").addEventListener("click", (e) => {
+  const p = e.target.closest(".pill");
+  if (!p) return;
+  state.resource = p.dataset.resource;
+  renderReview();
+});
+
+function renderTable() {
+  const name = state.resource;
+  const rows = (name && state.result.resources[name]) || [];
+  const label = (RESOURCE[name]?.label || "records").toLowerCase();
+  if (!rows.length) {
+    $("#table").innerHTML = `<div class="empty">No ${esc(label)} in this export.</div>`;
+    $("#table-caption").textContent = "";
+    return;
+  }
+  const cols = columnsFor(name, rows, state.lookups);
+  state.cols = cols;
+  const shown = rows.slice(0, TABLE_LIMIT);
+  const head = cols.map((c) => `<th${c.kind === "money" ? ' class="num-col"' : ""}>${esc(c.label)}</th>`).join("");
+  const body = shown.map((row, i) => `<tr data-i="${i}" tabindex="0">${cols.map((c) =>
+    `<td class="${c.kind === "money" ? "num-col money" : ""}">${cellHtml(c, c.value(row, state.lookups))}</td>`).join("")}</tr>`).join("");
+  const totalW = cols.reduce((s, c) => s + c.w, 0);
+  $("#table").innerHTML = `<table><colgroup>${cols.map((c) => `<col style="width:${(c.w / totalW) * 100}%">`).join("")}</colgroup><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+  $("#table-caption").textContent = rows.length > TABLE_LIMIT
+    ? `Showing the first ${fmtCount(TABLE_LIMIT)} of ${fmtCount(rows.length)} ${label}. Click a row to see the raw record. Everything else is in the folder.`
+    : `Showing all ${fmtCount(rows.length)} ${label}. Click a row to see the raw record.`;
+}
+$("#table").addEventListener("click", (e) => {
+  const tr = e.target.closest("tbody tr");
+  if (tr) openDrawer(Number(tr.dataset.i), tr);
+});
+$("#table").addEventListener("keydown", (e) => {
+  const tr = e.target.closest("tbody tr");
+  if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openDrawer(Number(tr.dataset.i), tr); }
+});
+
+function copyButton(btn, text) {
+  navigator.clipboard?.writeText(text);
+  const label = btn.querySelector("span"), was = label.textContent;
+  label.textContent = "Copied";
+  setTimeout(() => (label.textContent = was), 1400);
+}
+$("#copy-path").addEventListener("click", (e) => copyButton(e.currentTarget, state.result?.bundleDir || ""));
+
+async function revealFolder() {
+  const data = await postJson("/api/reveal", { bundleDir: state.result?.bundleDir });
+  if (!data.ok) copyButton($("#copy-path"), state.result?.bundleDir || "");
 }
 
-function selectTab(r, data) {
-  $("#tabs").querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.r === r));
-  $("#tabpanel").innerHTML = renderTable(data.resources[r] || []);
-  $("#tabpanel").querySelectorAll("td.exp").forEach(td => td.onclick = () => {
-    const tr = td.closest("tr"), raw = tr.nextElementSibling;
-    const open = raw.hasAttribute("hidden"); raw.toggleAttribute("hidden", !open); td.textContent = open ? "▾" : "▸";
-  });
-}
+// ---------- drawer ----------
+let lastFocus = null;
+function openDrawer(i, tr) {
+  const name = state.resource, row = state.result.resources[name][i], cols = state.cols, l = state.lookups;
+  document.querySelectorAll("tbody tr.selected").forEach((x) => x.classList.remove("selected"));
+  tr.classList.add("selected");
+  lastFocus = tr;
 
-function renderTable(rows) {
-  if (!rows.length) return '<div class="empty-state"><span class="big">Nothing here</span>No records returned for this resource.</div>';
-  // columns: primitive keys, priority-ordered, capped
-  const prim = new Set();
-  for (const row of rows) for (const k in row) { const v = row[k]; if (v === null || ["string","number","boolean"].includes(typeof v)) prim.add(k); }
-  let cols = COL_PRIORITY.filter(k => prim.has(k));
-  for (const k of [...prim].sort()) if (!cols.includes(k)) cols.push(k);
-  cols = cols.slice(0, 7);
-  const head = "<th class='exp'></th>" + cols.map(c => "<th>" + label(c) + "</th>").join("");
-  const body = rows.map(row => {
-    const cells = cols.map(c => "<td>" + cell(row[c]) + "</td>").join("");
-    const raw = "<tr class='raw' hidden><td colspan='" + (cols.length+1) + "'><pre>" + esc(JSON.stringify(row, null, 2)) + "</pre></td></tr>";
-    return "<tr><td class='exp'>▸</td>" + cells + "</tr>" + raw;
-  }).join("");
-  return "<div class='tablewrap'><table><thead><tr>" + head + "</tr></thead><tbody>" + body + "</tbody></table></div>";
-}
+  const val = (c) => c.value(row, l);
+  const nameCol = cols.find((c) => c.kind === "name");
+  const title = (nameCol && val(nameCol)) || row.id || RESOURCE[name]?.one || "Record";
+  const secondary = cols.find((c) => c !== nameCol && ["mono", ""].includes(c.kind || "") && val(c) != null);
+  const moneyCol = cols.find((c) => c.kind === "money" && val(c) != null);
+  const statusCol = cols.find((c) => c.kind === "status" && val(c) != null);
+  const dateCols = cols.filter((c) => c.kind === "date" && val(c) != null);
+  const metaDate = dateCols[dateCols.length - 1];
+  const amount = moneyCol && (() => { const v = val(moneyCol); return v && typeof v === "object" && "major" in v ? money(v.major, v.currency) : money(v); })();
 
-function cell(v) {
-  if (v === null || v === undefined) return "<span class='nul'>—</span>";
-  if (typeof v === "object") return "<span class='obj'>" + (Array.isArray(v) ? "["+v.length+"]" : "{…}") + "</span>";
-  return esc(String(v));
+  const details = cols.filter((c) => c !== nameCol && c !== moneyCol && c !== statusCol && val(c) != null)
+    .map((c) => {
+      const v = val(c);
+      const text = c.kind === "date" ? fmtLongDate(v) || v : c.kind === "enum" ? humanize(v) : typeof v === "object" ? JSON.stringify(v) : v;
+      return `<div><dt>${esc(c.label)}</dt><dd class="${c.kind === "mono" ? "mono" : ""}">${esc(text)}</dd></div>`;
+    });
+  if (row.id && !cols.some((c) => c.label === "Ramp ID")) {
+    details.push(`<div><dt>Ramp ID</dt><dd class="mono" title="${esc(row.id)}">${esc(row.id)}</dd></div>`);
+  }
+  const file = `${name}.jsonl`;
+  const json = JSON.stringify(row, null, 2);
+
+  $("#drawer-panel").innerHTML = `
+    <div class="panel-head">
+      <div class="avatar">${esc(String(title).trim()[0]?.toUpperCase() || "?")}</div>
+      <div class="name" id="drawer-name">${esc(title)}</div>
+      <div>${esc(RESOURCE[name]?.one || "Record")}${secondary ? ` · ${esc(secondary.label === "Invoice" ? `Invoice ${val(secondary)}` : val(secondary))}` : ""}</div>
+      ${amount ? `<div class="amount">${esc(amount.text)} <small>${esc(amount.code)}</small></div>` : ""}
+      ${statusCol ? `<div class="status-card"><span class="tag lg ${tone(val(statusCol))}">${esc(humanize(val(statusCol)))}</span>${
+        metaDate ? `<span>${esc(metaDate.label)} ${esc(fmtLongDate(val(metaDate)) || "")}</span>` : ""}</div>` : ""}
+    </div>
+    <div class="panel-body">
+      ${details.length ? `<dl class="details" style="margin:0">${details.join("")}</dl>` : ""}
+      <div>
+        <div class="raw-head"><span class="overline">Raw record</span>
+          <button class="btn outline xs" type="button" id="copy-json">${ICON.copy}<span>Copy JSON</span></button></div>
+        <div class="caption subtle" style="margin-top:8px">${esc(file)} · line ${fmtCount(i + 1)}</div>
+        <pre class="json">${esc(json)}</pre>
+      </div>
+    </div>`;
+  $("#copy-json").addEventListener("click", (e) => copyButton(e.currentTarget, json));
+  $("#drawer").hidden = false;
+  $("#drawer .close").focus();
 }
-function label(s){ return String(s).replace(/[_-]/g," ").replace(/\b\w/g, m => m.toUpperCase()); }
-function esc(s){ return s.replace(/[&<>]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[m])); }
+function closeDrawer() {
+  $("#drawer").hidden = true;
+  document.querySelectorAll("tbody tr.selected").forEach((x) => x.classList.remove("selected"));
+  lastFocus?.focus();
+}
+$("#drawer").addEventListener("click", (e) => { if (e.target.closest("[data-close]")) closeDrawer(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#drawer").hidden) closeDrawer(); });
+
+// ---------- boot ----------
+renderScopes([]);
+renderChoices();
+$("#history-hint").textContent = HISTORY_HINT.all;
+goTo("connect");
 </script>
 </body>
 </html>

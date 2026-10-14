@@ -82,17 +82,22 @@ export async function fetchSubResource(
   client: RampClient,
   name: string,
   parentRecords: unknown[],
+  opts: { signal?: AbortSignal; onParentDone?: (done: number, total: number) => void } = {},
 ): Promise<unknown[]> {
   const def = RESOURCES[name];
   if (!def?.parent) throw new Error(`${name} is not a sub-resource`);
   const { subPath, linkField } = def.parent;
   const out: unknown[] = [];
+  let done = 0;
   for (const parent of parentRecords) {
+    opts.signal?.throwIfAborted();
     const pid = (parent as Record<string, unknown>).id;
-    if (typeof pid !== "string") continue;
-    for await (const record of client.paginate(subPath(pid))) {
-      out.push({ [linkField]: pid, ...(record as Record<string, unknown>) });
+    if (typeof pid === "string") {
+      for await (const record of client.paginate(subPath(pid))) {
+        out.push({ [linkField]: pid, ...(record as Record<string, unknown>) });
+      }
     }
+    opts.onParentDone?.(++done, parentRecords.length);
   }
   return out;
 }
