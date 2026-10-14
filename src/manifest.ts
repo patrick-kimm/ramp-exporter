@@ -1,3 +1,5 @@
+import type { SourceId } from "./sources/types";
+
 /**
  * The export manifest — written (last, atomically) at the bundle root as
  * export-metadata.json. This is the ONLY coupling between this exporter and the
@@ -5,37 +7,50 @@
  */
 
 export type ResourceStatus = "complete" | "partial" | "skipped" | "failed";
-export type Category = "users" | "cards" | "vendors";
+export type RunStatus = "complete" | "partial" | "failed";
 
 export interface ResourceMeta {
-  file: string;
-  format: "jsonl";
+  /** Absent when nothing was written (skipped / failed). */
+  file?: string;
+  format?: "jsonl";
   row_count: number;
-  sha256: string;
+  sha256?: string;
   status: ResourceStatus;
+  /** Why a resource was skipped or failed, in plain words. */
+  reason?: string;
+  /** The token permission that would have allowed it. */
+  scope?: string;
 }
 
 export interface Manifest {
   format_version: string;
   exporter: { name: "ramp-exporter"; version: string; git_sha?: string };
-  source: { system: "ramp"; api_version?: string };
+  source: { system: SourceId; api_version?: string };
   run: {
     run_id: string;
     started_at: string;
     completed_at?: string;
-    status: "complete" | "partial" | "failed";
+    status: RunStatus;
     mode: "full";
   };
   filters?: { date_range?: { from: string; to: string } };
-  categories?: Category[];
+  categories?: string[];
   resources: Record<string, ResourceMeta>;
   counts_summary?: Record<string, number>;
 }
 
-export const FORMAT_VERSION = "1.0";
+/** 1.1: multiple source systems, `{system}/{run_id}` layout, skipped/failed resources without files. */
+export const FORMAT_VERSION = "1.1";
+
+export function runStatusOf(resources: Record<string, ResourceMeta>): RunStatus {
+  const metas = Object.values(resources);
+  if (metas.length > 0 && metas.every((m) => m.status === "complete")) return "complete";
+  return metas.some((m) => m.status === "complete") ? "partial" : "failed";
+}
 
 export function buildManifest(input: {
   exporterVersion: string;
+  system: SourceId;
   runId: string;
   startedAt: string;
   completedAt: string;
@@ -43,19 +58,19 @@ export function buildManifest(input: {
   resources: Record<string, ResourceMeta>;
   counts: Record<string, number>;
   filters?: { date_range?: { from: string; to: string } };
-  categories?: Category[];
+  categories?: string[];
   apiVersion?: string;
   gitSha?: string;
 }): Manifest {
   return {
     format_version: FORMAT_VERSION,
     exporter: { name: "ramp-exporter", version: input.exporterVersion, git_sha: input.gitSha },
-    source: { system: "ramp", api_version: input.apiVersion ?? "developer/v1" },
+    source: { system: input.system, api_version: input.apiVersion },
     run: {
       run_id: input.runId,
       started_at: input.startedAt,
       completed_at: input.completedAt,
-      status: "complete",
+      status: runStatusOf(input.resources),
       mode: input.mode,
     },
     filters: input.filters,

@@ -1,7 +1,7 @@
 {
   "name": "ramp-exporter",
-  "version": "0.1.0",
-  "description": "Customer-run, open-source exporter for Ramp data into neutral files (raw-faithful JSONL bundles).",
+  "version": "0.2.0",
+  "description": "Customer-run, open-source exporter for Ramp, Mercury, Brex, and Rho data into neutral files (raw-faithful JSONL bundles).",
   "type": "module",
   "license": "Apache-2.0",
   "bin": {
@@ -11,7 +11,8 @@
     "start": "bun run src/cli.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "build": "bun build src/cli.ts --compile --outfile dist/ramp-exporter"
+    "build": "bun build src/cli.ts --compile --outfile dist/ramp-exporter",
+    "demo": "bun run scripts/demo.ts"
   },
   "dependencies": {
     "yaml": "^2.5.1",

@@ -36,6 +36,10 @@ export async function validateBundle(dir: string): Promise<ValidationResult> {
   }
 
   for (const [name, meta] of Object.entries(manifest.resources ?? {})) {
+    if (!meta.file) {
+      if (meta.status === "complete") errors.push(`${name}: marked complete but declares no file`);
+      continue;
+    }
     const filePath = join(dir, meta.file);
     if (!existsSync(filePath)) {
       errors.push(`${name}: declared file missing (${meta.file})`);
@@ -45,7 +49,7 @@ export async function validateBundle(dir: string): Promise<ValidationResult> {
     const sha = createHash("sha256").update(content).digest("hex");
     if (sha !== meta.sha256) {
       errors.push(
-        `${name}: sha256 mismatch (manifest ${meta.sha256.slice(0, 12)}…, actual ${sha.slice(0, 12)}…)`,
+        `${name}: sha256 mismatch (manifest ${meta.sha256?.slice(0, 12) ?? "missing"}…, actual ${sha.slice(0, 12)}…)`,
       );
     }
     const rowCount = countJsonlRows(content.toString("utf8"));

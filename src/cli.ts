@@ -1,15 +1,17 @@
 #!/usr/bin/env bun
 import { loadConfig, loadCredentials } from "./config";
 import { runExport } from "./export";
+import { SOURCES, SOURCE_IDS, isSourceId } from "./sources";
+import { startUiServer } from "./ui/server";
 import { validateBundle } from "./validate";
-import type { Category } from "./manifest";
 
-const VERSION = "0.1.0";
-const USAGE = `ramp-exporter ${VERSION}
+const VERSION = "0.2.0";
+const USAGE = `ramp-exporter ${VERSION} — export your data from ${SOURCE_IDS.map((id) => SOURCES[id].label).join(", ")}
 
 usage:
-  ramp-exporter ui [--port 4747]                  open the local web UI
-  ramp-exporter export <users|cards|vendors|all> [--config config.yml]
+  ramp-exporter ui [--port 4747]                       open the local web UI
+  ramp-exporter export [<category>...|all] [--source ramp|mercury|brex|rho] [--config config.yml]
+  ramp-exporter sources                                 list sources, their categories, and env vars
   ramp-exporter validate <bundle-dir>
   ramp-exporter version
 `;
@@ -50,18 +52,45 @@ async function main(): Promise<void> {
 
   switch (cmd) {
     case "export": {
-      const config = loadConfig(flags.config ?? "config.yml");
-      const credentials = loadCredentials();
-      const target = positionals[0] ?? "all";
-      const categories: Category[] =
-        target === "all" ? config.export.categories : [target as Category];
-      const { bundleDir } = await runExport({
+      const config = loadConfig(flags.config ?? "config.yml", { required: flags.config !== undefined });
+      if (flags.source !== undefined) {
+        if (!isSourceId(flags.source)) {
+          console.error(`unknown source: ${flags.source} (choose from ${SOURCE_IDS.join(", ")})`);
+          process.exit(2);
+        }
+        if (flags.source !== config.source.system) {
+          // These settings in config.yml were written for the other source; the date range still applies.
+          config.source = { system: flags.source };
+          config.export.categories = undefined;
+          config.runtime.rate_limit_rps = undefined;
+        }
+      }
+      const source = SOURCES[config.source.system];
+      const credentials = loadCredentials(source);
+      const all = positionals.length === 0 || positionals.includes("all");
+      const { bundleDir, manifest } = await runExport({
         config,
         credentials,
-        categories,
+        categories: all ? undefined : positionals,
         log: (m) => console.error(m),
       });
+      if (manifest.run.status === "partial") {
+        const skipped = Object.entries(manifest.resources).filter(([, m]) => m.status !== "complete");
+        console.error(`\n⚠ partial export — ${skipped.length} resource(s) not exported:`);
+        for (const [name, m] of skipped) console.error(`  - ${name}: ${m.reason}`);
+      }
       console.log(bundleDir); // stdout = the one machine-readable result
+      break;
+    }
+
+    case "sources": {
+      for (const id of SOURCE_IDS) {
+        const s = SOURCES[id];
+        console.log(`${id} — ${s.label}: ${s.tagline}`);
+        console.log(`  env: ${s.credentials.map((c) => c.env).join(", ")}`);
+        for (const c of s.categories) console.log(`  ${c.id.padEnd(10)} ${c.resources.join(", ")}`);
+        console.log("");
+      }
       break;
     }
 
@@ -74,7 +103,8 @@ async function main(): Promise<void> {
       const result = await validateBundle(dir);
       if (result.ok) {
         const n = Object.keys(result.manifest?.resources ?? {}).length;
-        console.error(`✓ bundle OK (${n} resources)`);
+        const status = result.manifest?.run.status;
+        console.error(`✓ bundle OK (${n} resources${status && status !== "complete" ? `, run ${status}` : ""})`);
       } else {
         console.error("✗ bundle invalid:");
         for (const e of result.errors) console.error(`  - ${e}`);
@@ -84,11 +114,10 @@ async function main(): Promise<void> {
     }
 
     case "ui": {
-      const { startUiServer } = await import("./ui/server");
       const port = Number(flags.port ?? "4747");
       const { url } = startUiServer({ port: Number.isFinite(port) ? port : 4747 });
       console.error(`ramp-exporter ui → ${url}`);
-      console.error("Paste your Ramp credentials in the browser. Everything runs locally; nothing is stored.");
+      console.error("Paste your credentials in the browser. Everything runs locally; nothing is stored.");
       try {
         const opener =
           process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
