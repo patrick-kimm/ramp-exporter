@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ramp export · Slash</title>
+<title>Export · Slash</title>
+<link rel="icon" href="data:," />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -215,6 +216,27 @@
   .raw-head { display: flex; align-items: center; justify-content: space-between; }
   pre.json { margin: 8px 0 0; padding: 12px; border-radius: 8px; border: 1px solid var(--color-border-subtle); background: var(--color-surface-subtle); font-family: var(--font-mono); font-size: 11px; line-height: 17px; color: var(--color-text-normal); white-space: pre-wrap; overflow-wrap: anywhere; }
 
+  /* additions: warning / info cards, platform tiles, hints */
+  .alert.warn { border-color: oklch(91% 0.05 81.8); background: oklch(98.5% 0.012 81.8); }
+  .alert.warn .title { color: var(--color-warning-text); }
+  .alert.warn .desc { color: var(--color-text-normal); }
+  .alert.info { border-color: var(--color-border-normal); background: var(--color-surface-subtle); }
+  .alert.info .title { color: var(--color-text-prominent); }
+  .alert.info .desc { color: var(--color-text-normal); }
+  .skip-list { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 0; padding: 0 0 0 16px; color: var(--color-text-normal); }
+  .skip-list b { font-weight: 525; color: var(--color-text-prominent); }
+  .skip-list .scope { margin-left: 4px; }
+  .letter-tile { font-size: 18px; font-weight: 650; color: var(--color-text-prominent); }
+  .choice[aria-disabled="true"] { opacity: .55; cursor: not-allowed; }
+  .choice[aria-disabled="true"]:hover { border-color: var(--color-border-normal); }
+  .choice-warn { display: block; margin-top: 2px; color: var(--color-warning-text); }
+  .hint { color: var(--color-warning-text); }
+  .link-btn { padding: 0; border: 0; background: none; color: var(--color-info-text); font-weight: 525; }
+  .link-btn:hover { text-decoration: underline; }
+  .prow[data-state="skipped"] .name, .prow[data-state="skipped"] .meta { color: var(--color-text-subtle); }
+  .prow[data-state="failed"] .meta { color: var(--color-danger-text); }
+  .pill .tag { height: 18px; font-size: 12px; }
+
   @media (max-width: 1100px) {
     .steps { display: none; }
     .column, .column.wide { width: 100%; max-width: 1000px; margin: 0 auto; padding: 32px 24px 0; }
@@ -235,7 +257,7 @@
   </header>
 
   <main class="layout">
-    <div class="progress"><div id="progress-fill" style="width:25%"></div></div>
+    <div class="progress"><div id="progress-fill" style="width:20%"></div></div>
     <div class="body">
       <nav class="steps" aria-label="Steps"><ol id="steps"></ol></nav>
 
@@ -243,46 +265,38 @@
         <h2 id="title"></h2>
         <div class="scroll">
 
-          <!-- 1 · Connect -->
-          <div class="fields" id="pane-connect">
+          <!-- 1 · Platform -->
+          <div class="fields" id="pane-platform">
+            <div class="alert" id="platform-error" role="alert" hidden></div>
+            <p style="margin:0">Pick the platform you’re leaving. The export runs on this computer, reads everything it can, and saves it to a folder you can bring to Slash.</p>
+            <div class="choices" id="platforms" role="radiogroup" aria-label="Platform"></div>
+          </div>
+
+          <!-- 2 · Connect -->
+          <div class="fields" id="pane-connect" hidden>
             <div class="alert" id="connect-error" role="alert" hidden></div>
-            <p id="connect-intro" style="margin:0">Paste the Client ID and Client Secret from a read-only Ramp developer app. They’re held in memory on this computer and only ever sent to Ramp.</p>
-            <div class="field">
-              <label for="cid">Client ID <span class="req">*</span></label>
-              <div class="input"><input id="cid" type="text" autocomplete="off" spellcheck="false" placeholder="ramp_id_…" /></div>
-            </div>
-            <div class="field">
-              <label for="csec">Client Secret <span class="req">*</span></label>
-              <div class="input">
-                <input id="csec" type="password" autocomplete="off" spellcheck="false" placeholder="ramp_sec_…" />
-                <button class="icon-btn" id="toggle-secret" type="button" aria-label="Show secret">
-                  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8s-2.4 4.5-6.5 4.5S1.5 8 1.5 8Z" fill="none" stroke="oklch(51.9% 0.015 82.4)" stroke-width="1.3" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" fill="none" stroke="oklch(51.9% 0.015 82.4)" stroke-width="1.3"/></svg>
-                </button>
-              </div>
-              <span class="caption subtle">Never saved to disk or written to logs.</span>
-            </div>
+            <p id="connect-intro" style="margin:0"></p>
+            <div class="fields" id="cred-fields"></div>
             <div class="card">
               <div class="card-head">
-                Create the app in Ramp
-                <a class="link" href="https://app.ramp.com" target="_blank" rel="noopener">Open Ramp
+                <span id="setup-title"></span>
+                <a class="link" id="setup-link" href="#" target="_blank" rel="noopener"><span></span>
                   <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5H3.5v9h9V10M9 2.5h4.5V7M13.5 2.5 7.5 8.5" fill="none" stroke="oklch(51.9% 0.135 248.6)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </a>
               </div>
-              <ol class="setup-steps">
-                <li><span class="num">1</span>Go to Settings → Developer → Create app</li>
-                <li><span class="num">2</span>Choose Client credentials as the grant type</li>
-                <li><span class="num">3</span><div>Turn on all 10 read scopes<div class="scopes" id="scopes"></div></div></li>
-              </ol>
+              <ol class="setup-steps" id="setup-steps"></ol>
             </div>
+            <span class="caption subtle" id="setup-note"></span>
           </div>
 
-          <!-- 2 · Choose data -->
+          <!-- 3 · Choose data -->
           <div class="fields" id="pane-choose" hidden>
             <div class="alert" id="choose-error" role="alert" hidden></div>
+            <div class="alert warn" id="access-note" hidden></div>
             <p style="margin:0">Everything is read-only. You can run the export again any time before you switch.</p>
             <div class="choices" id="choices" role="group" aria-label="Categories"></div>
             <div class="field" id="history-field">
-              <label for="history">Bill and transaction history</label>
+              <label for="history">History</label>
               <div class="input select">
                 <select id="history">
                   <option value="all">All history</option>
@@ -300,18 +314,20 @@
             </div>
           </div>
 
-          <!-- 3 · Export -->
+          <!-- 4 · Export -->
           <div class="fields" id="pane-export" hidden>
-            <p style="margin:0">This usually takes a few minutes. Keep this tab open — files are saved as each one finishes.</p>
+            <p style="margin:0" id="export-intro"></p>
             <div class="card">
-              <div class="card-head">Ramp account <span class="caption subtle" style="font-weight:450" id="files-done"></span></div>
+              <div class="card-head"><span id="export-account"></span> <span class="caption subtle" style="font-weight:450" id="files-done"></span></div>
               <div class="rows" id="progress-rows"></div>
             </div>
           </div>
 
-          <!-- 4 · Review -->
+          <!-- 5 · Review -->
           <div class="fields" id="pane-review" hidden>
             <div class="agg" id="agg"></div>
+            <div class="alert warn" id="skipped-note" hidden></div>
+            <div class="alert info" id="sensitive-note" hidden></div>
             <div class="folder">
               <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="flex-shrink:0"><path d="M2 4.5c0-.55.45-1 1-1h3.1l1.4 1.5H13c.55 0 1 .45 1 1v6c0 .55-.45 1-1 1H3c-.55 0-1-.45-1-1v-7.5z" fill="none" stroke="oklch(51.9% 0.015 82.4)" stroke-width="1.3" stroke-linejoin="round"/></svg>
               <code id="bundle-path"></code>
@@ -328,6 +344,7 @@
 
         </div>
         <footer class="flow-footer">
+          <span class="caption subtle" id="footer-note" style="margin-right:auto"></span>
           <button class="btn outline" id="back" type="button"></button>
           <button class="btn cta" id="next" type="button"></button>
         </footer>
@@ -347,33 +364,19 @@
 <script>
 const $ = (s, r = document) => r.querySelector(s);
 
-const SCOPES = ["users:read", "departments:read", "locations:read", "entities:read", "cards:read", "spend_programs:read", "funds:read", "vendors:read", "bills:read", "transactions:read"];
-const CATEGORIES = [
-  { id: "users", label: "Users", desc: "People, departments, locations, and entities", resources: ["users", "departments", "locations", "entities"],
-    icon: '<circle cx="7.5" cy="7" r="3"/><path d="M2 16c.6-2.6 2.8-4.3 5.5-4.3S12.4 13.4 13 16" stroke-linecap="round"/><path d="M13 4.3a3 3 0 0 1 0 5.4M15 11.9c1.5.6 2.6 2 3 4.1" stroke-linecap="round"/>' },
-  { id: "cards", label: "Cards", desc: "Cards, spend programs, and funds", resources: ["cards", "spend-programs", "funds"],
-    icon: '<rect x="2.5" y="4.5" width="15" height="11" rx="2"/><path d="M2.5 8h15M5.5 12.5h3" stroke-linecap="round"/>' },
-  { id: "vendors", label: "Vendors", desc: "Vendors, contacts, bills, and transactions", resources: ["vendors", "vendor_contacts", "bills", "transactions"],
-    icon: '<path d="M3 8.5V16.5h14V8.5M2.5 4h15l-1 4.5H3.5L2.5 4Z" stroke-linejoin="round"/><path d="M8 16.5v-4h4v4" stroke-linejoin="round"/>' },
-];
-const RESOURCE = {
-  users: { label: "Users", one: "User" },
-  departments: { label: "Departments", one: "Department" },
-  locations: { label: "Locations", one: "Location" },
-  entities: { label: "Business entities", one: "Business entity" },
-  cards: { label: "Cards", one: "Card" },
-  "spend-programs": { label: "Spend programs", one: "Spend program" },
-  funds: { label: "Funds", one: "Fund" },
-  vendors: { label: "Vendors", one: "Vendor" },
-  vendor_contacts: { label: "Vendor contacts", one: "Vendor contact" },
-  bills: { label: "Bills", one: "Bill" },
-  transactions: { label: "Card transactions", one: "Card transaction" },
+const CATEGORY_ICON = {
+  users: '<circle cx="7.5" cy="7" r="3"/><path d="M2 16c.6-2.6 2.8-4.3 5.5-4.3S12.4 13.4 13 16" stroke-linecap="round"/><path d="M13 4.3a3 3 0 0 1 0 5.4M15 11.9c1.5.6 2.6 2 3 4.1" stroke-linecap="round"/>',
+  cards: '<rect x="2.5" y="4.5" width="15" height="11" rx="2"/><path d="M2.5 8h15M5.5 12.5h3" stroke-linecap="round"/>',
+  vendors: '<path d="M3 8.5V16.5h14V8.5M2.5 4h15l-1 4.5H3.5L2.5 4Z" stroke-linejoin="round"/><path d="M8 16.5v-4h4v4" stroke-linejoin="round"/>',
+  accounts: '<path d="M2.5 7.5 10 3.5l7.5 4M4 8v6.5M8 8v6.5M12 8v6.5M16 8v6.5M2.5 16.5h15" stroke-linecap="round" stroke-linejoin="round"/>',
+  expenses: '<path d="M5 2.5h10v15l-2.5-1.5L10 17.5 7.5 16 5 17.5v-15Z" stroke-linejoin="round"/><path d="M7.5 6.5h5M7.5 9.5h5M7.5 12.5h3" stroke-linecap="round"/>',
+  invoicing: '<path d="M5.5 2.5h6l3 3v12h-9v-15Z" stroke-linejoin="round"/><path d="M11.5 2.5v3h3M8 10h4M8 13h4" stroke-linecap="round" stroke-linejoin="round"/>',
 };
-const STEPS = [
-  { id: "connect", label: "Connect Ramp", title: "Connect your Ramp account" },
-  { id: "choose", label: "Choose data", title: "Choose what to export" },
-  { id: "export", label: "Export", title: "Exporting from Ramp" },
-  { id: "review", label: "Review", title: "Your export is ready" },
+/** Recognizable token shapes, so a token pasted into the wrong platform is caught before a 401. */
+const TOKEN_SHAPES = [
+  { source: "ramp", re: /^ramp_(id|sec)_/i },
+  { source: "mercury", re: /^(secret-token:)?mercury_/i },
+  { source: "brex", re: /^bxt_/i },
 ];
 const TABLE_LIMIT = 100;
 
@@ -383,14 +386,25 @@ const ICON = {
   upcoming: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="oklch(91.3% 0.008 91.6)" stroke-width="1.5"/></svg>',
   rowDone: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="oklch(50.3% 0.152 144.4)"/><path d="M5 8.2l2 2 4-4.2" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   rowRunning: '<svg class="spin" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="oklch(91.3% 0.008 91.6)" stroke-width="1.5"/><path d="M8 1.75a6.25 6.25 0 0 1 6.25 6.25" fill="none" stroke="oklch(65.2% 0.131 91.7)" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  rowSkipped: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="oklch(65.1% 0.020 86.2)" stroke-width="1.5"/><path d="M5.5 8h5" stroke="oklch(65.1% 0.020 86.2)" stroke-width="1.5" stroke-linecap="round"/></svg>',
   alert: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="oklch(67.31% 0.167 20.06)" stroke-width="1.5"/><path d="M8 4.75v3.75" stroke="oklch(67.31% 0.167 20.06)" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="10.9" r="0.85" fill="oklch(67.31% 0.167 20.06)"/></svg>',
+  warn: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M7.13 2.5a1 1 0 0 1 1.74 0l5.6 9.75a1 1 0 0 1-.87 1.5H2.4a1 1 0 0 1-.87-1.5L7.13 2.5Z" fill="none" stroke="oklch(52.9% 0.117 56.8)" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6.25v3" stroke="oklch(52.9% 0.117 56.8)" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.4" r="0.8" fill="oklch(52.9% 0.117 56.8)"/></svg>',
+  lock: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5" fill="none" stroke="oklch(51.9% 0.135 248.6)" stroke-width="1.3"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="oklch(51.9% 0.135 248.6)" stroke-width="1.3" stroke-linecap="round"/></svg>',
   copy: '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><rect x="5.25" y="5.25" width="8" height="8" rx="1.5" fill="none" stroke="oklch(51.9% 0.015 82.4)" stroke-width="1.3"/><path d="M10.75 3.25v-.5c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h.5" fill="none" stroke="oklch(51.9% 0.015 82.4)" stroke-width="1.3" stroke-linecap="round"/></svg>',
+  eye: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8s-2.4 4.5-6.5 4.5S1.5 8 1.5 8Z" fill="none" stroke="oklch(51.9% 0.015 82.4)" stroke-width="1.3" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" fill="none" stroke="oklch(51.9% 0.015 82.4)" stroke-width="1.3"/></svg>',
 };
 
 const state = {
-  step: "connect",
+  step: "platform",
   busy: false,
-  selected: new Set(CATEGORIES.map((c) => c.id)),
+  sources: [],
+  sourceId: null,
+  pickedId: null,
+  /** Credentials typed per platform, kept in memory only. */
+  creds: {},
+  access: null,
+  accountName: null,
+  selected: new Set(),
   rows: [],
   abort: null,
   result: null,
@@ -398,12 +412,29 @@ const state = {
   tab: null,
   resource: null,
 };
+const src = () => state.sources.find((s) => s.id === state.sourceId);
+const resLabel = (name) => src()?.resources[name]?.label || name;
+
+function steps() {
+  const label = src()?.label || "your platform";
+  return [
+    { id: "platform", label: "Choose platform", title: "Where are you moving from?" },
+    { id: "connect", label: `Connect ${label}`, title: `Connect your ${label} account` },
+    { id: "choose", label: "Choose data", title: "Choose what to export" },
+    { id: "export", label: "Export", title: `Exporting from ${label}` },
+    { id: "review", label: "Review", title: "Your export is ready" },
+  ];
+}
 
 // ---------- formatting ----------
 function esc(v) {
   return String(v).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 }
 const fmtCount = (n) => Number(n).toLocaleString("en-US");
+function listOf(items) {
+  if (items.length <= 1) return items.join("");
+  return `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
+}
 function parseDate(v) {
   if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}/.test(v)) return null;
   const d = new Date(v.length === 10 ? `${v}T00:00:00` : v);
@@ -417,23 +448,33 @@ function fmtLongDate(v) {
   const d = parseDate(v);
   return d ? d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : null;
 }
-/** Ramp CurrencyAmount objects are minor units; bare numbers (transactions) are major units. */
+function minorDigits(code) {
+  try { return new Intl.NumberFormat("en-US", { style: "currency", currency: code }).resolvedOptions().maximumFractionDigits; }
+  catch { return 2; }
+}
+/**
+ * `{ amount, currency | currency_code }` objects (Ramp, Brex, Rho) are minor units;
+ * bare numbers (Mercury, Ramp card transactions) are major units.
+ */
 function money(v, currency) {
   let amount = null, code = currency || "USD";
-  if (v && typeof v === "object" && typeof v.amount === "number") { amount = v.amount / 100; code = v.currency_code || code; }
-  else if (typeof v === "number") amount = v;
+  if (v && typeof v === "object" && "major" in v) return money(v.major, v.currency);
+  if (v && typeof v === "object" && typeof v.amount === "number") {
+    code = v.currency || v.currency_code || code;
+    amount = v.amount / 10 ** minorDigits(code);
+  } else if (typeof v === "number") amount = v;
   if (amount === null) return null;
   try { return { text: new Intl.NumberFormat("en-US", { style: "currency", currency: code }).format(amount), code }; }
   catch { return { text: amount.toFixed(2), code }; }
 }
 function humanize(v) {
-  return String(v).toLowerCase().replace(/_/g, " ").replace(/^\w/, (m) => m.toUpperCase());
+  return String(v).replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase().replace(/_/g, " ").replace(/^\w/, (m) => m.toUpperCase());
 }
 function tone(v) {
   const s = String(v).toUpperCase();
-  if (/^(PAID|ACTIVE|CLEARED|COMPLETED|APPROVED|ENABLED|VERIFIED)$/.test(s)) return "success";
-  if (/^(OPEN|PENDING|UNPAID|AWAITING|DRAFT|INVITE_PENDING|PENDING_APPROVAL|OVERDUE)/.test(s)) return "warning";
-  if (/^(TERMINATED|SUSPENDED|DECLINED|REJECTED|FAILED|CANCELED|CANCELLED|VOIDED|DELETED|DISABLED)$/.test(s)) return "danger";
+  if (/^(PAID|ACTIVE|CLEARED|COMPLETED?|APPROVED|ENABLED|VERIFIED|SENT|POSTED|PROCESSED)$/.test(s)) return "success";
+  if (/^(OPEN|PENDING|UNPAID|AWAITING|DRAFT|INVITE_PENDING|INVITED|PENDING_APPROVAL|OVERDUE|SCHEDULED|PROCESSING|IN_REVIEW)/.test(s)) return "warning";
+  if (/^(TERMINATED|SUSPENDED|DECLINED|REJECTED|FAILED|CANCELED|CANCELLED|VOIDED|DELETED|DISABLED|CLOSED|LOCKED|FROZEN|REMOVED|ARCHIVED|INACTIVE)$/.test(s)) return "danger";
   return "";
 }
 const get = (o, path) => path.split(".").reduce((v, k) => (v == null ? undefined : v[k]), o);
@@ -441,27 +482,29 @@ function pick(o, ...paths) {
   for (const p of paths) { const v = get(o, p); if (v !== undefined && v !== null && v !== "") return v; }
   return null;
 }
-const fullName = (o) => (o ? [o.first_name, o.last_name].filter(Boolean).join(" ") || null : null);
+const fullName = (o) => (o ? [o.first_name ?? o.firstName, o.last_name ?? o.lastName].filter(Boolean).join(" ") || null : null);
+const mask = (v) => (typeof v === "string" && v.length > 4 ? `•••• ${v.slice(-4)}` : v);
 
 // ---------- steps ----------
-function stepIndex(id) { return STEPS.findIndex((s) => s.id === id); }
+function stepIndex(id) { return steps().findIndex((s) => s.id === id); }
 
 function goTo(step) {
   state.step = step;
-  const idx = stepIndex(step);
-  $("#progress-fill").style.width = `${((idx + 1) / STEPS.length) * 100}%`;
-  $("#title").textContent = STEPS[idx].title;
+  const all = steps(), idx = stepIndex(step);
+  $("#progress-fill").style.width = `${((idx + 1) / all.length) * 100}%`;
+  $("#title").textContent = all[idx].title;
+  document.title = src() ? `${src().label} export · Slash` : "Export · Slash";
   $("#column").classList.toggle("wide", step === "review");
-  for (const s of STEPS) $(`#pane-${s.id}`).hidden = s.id !== step;
+  for (const s of all) $(`#pane-${s.id}`).hidden = s.id !== step;
   renderSteps();
   renderFooter();
   $(".scroll").scrollTop = 0;
 }
 
 function renderSteps() {
-  const cur = stepIndex(state.step);
+  const all = steps(), cur = stepIndex(state.step);
   const locked = state.step === "export" || state.busy;
-  $("#steps").innerHTML = STEPS.map((s, i) => {
+  $("#steps").innerHTML = all.map((s, i) => {
     const st = i < cur ? "done" : i === cur ? "current" : "upcoming";
     const disabled = st !== "done" || locked || s.id === "export";
     return `<li><button class="step" type="button" data-step="${s.id}" data-state="${st}" ${disabled ? "disabled" : ""} ${st === "current" ? 'aria-current="step"' : ""}><span class="ico">${ICON[st]}</span>${esc(s.label)}</button></li>`;
@@ -472,14 +515,29 @@ $("#steps").addEventListener("click", (e) => {
   if (b && !b.disabled) goTo(b.dataset.step);
 });
 
+function connectEstimate() {
+  const s = src();
+  if (!s) return 0;
+  return Math.ceil(Object.keys(s.resources).length / s.rateLimitRps);
+}
+
 function renderFooter() {
-  const back = $("#back"), next = $("#next");
-  back.hidden = false; back.disabled = false; next.disabled = state.busy;
+  const back = $("#back"), next = $("#next"), note = $("#footer-note");
+  back.hidden = false; back.disabled = false; next.disabled = state.busy; note.textContent = "";
   switch (state.step) {
-    case "connect":
+    case "platform":
       back.hidden = true;
-      next.textContent = state.busy ? "Checking…" : $("#connect-error").hidden ? "Next" : "Try again";
+      next.textContent = "Next";
+      next.disabled = !state.pickedId;
       break;
+    case "connect": {
+      back.textContent = "Back";
+      back.disabled = state.busy;
+      next.textContent = state.busy ? "Checking access…" : $("#connect-error").hidden ? "Connect" : "Try again";
+      const secs = connectEstimate();
+      if (state.busy && secs > 5) note.textContent = `${src().label} allows about one request a second, so this takes ~${secs} seconds.`;
+      break;
+    }
     case "choose":
       back.textContent = "Back";
       next.textContent = "Start export";
@@ -494,10 +552,13 @@ function renderFooter() {
       back.textContent = "Export again";
       next.textContent = "Open folder";
       break;
+    default:
+      throw new Error(`Unknown step: ${state.step}`);
   }
 }
 $("#back").addEventListener("click", () => {
   switch (state.step) {
+    case "connect": return goTo("platform");
     case "choose": return goTo("connect");
     case "export": return cancelExport();
     case "review": return goTo("choose");
@@ -505,6 +566,7 @@ $("#back").addEventListener("click", () => {
 });
 $("#next").addEventListener("click", () => {
   switch (state.step) {
+    case "platform": return pickPlatform();
     case "connect": return connect();
     case "choose": return startExport();
     case "review": return revealFolder();
@@ -513,33 +575,52 @@ $("#next").addEventListener("click", () => {
 
 // ---------- errors ----------
 function errorCopy(err) {
+  const s = src(), label = s?.label || "the platform";
   const status = err.status;
-  const scopes = err.missingScopes || [];
+  const credName = s ? listOf(s.credentials.map((c) => c.label)) : "credentials";
   if (err.network) {
     return { title: "Couldn’t reach the exporter", desc: "Is ramp-exporter ui still running in your terminal? Start it again, then retry." };
   }
-  if (status === 401 || /invalid_client/i.test(err.rampSays || "")) {
-    return { title: `Ramp didn’t recognize these credentials (${status || 401})`, desc: "Copy the Client ID and Client Secret again from the app in Ramp, then try again." };
+  switch (err.kind) {
+    case "request":
+      return { title: "Check the form", desc: err.error };
+    case "auth": {
+      const scopes = err.missingScopes || [];
+      if (s?.id === "ramp" && status === 403) {
+        return scopes.length
+          ? { title: "Ramp turned down this app (403)", desc: `Turn on ${scopes.join(", ")} for this app in Ramp, then try again. Your Client ID and Secret don’t change.` }
+          : { title: "Ramp turned down this app (403)", desc: `The app is missing one or more of the ${s.scopes.length} read scopes below. Turn them all on in Ramp, then try again.` };
+      }
+      const extra = s?.id === "mercury" ? " A read-write token also needs this computer’s IP on its allowlist; a read-only token doesn’t." : "";
+      return { title: `${label} didn’t accept this ${credName.toLowerCase()}${status ? ` (${status})` : ""}`, desc: `Copy it again from ${label} — it may have expired or been revoked.${extra}` };
+    }
+    case "forbidden":
+      return { title: `${label} denied access${status ? ` (${status})` : ""}`, desc: `This ${credName.toLowerCase()} can’t read some of what you picked. Create one with read access to everything, then reconnect.` };
+    case "rate_limited":
+      return { title: `${label} is rate-limiting this token`, desc: "Wait a minute, then try again. Files that finished are kept only when the whole export completes." };
+    case "server":
+      return { title: `${label} is having trouble${status ? ` (${status})` : ""}`, desc: "This is on their side. Try again in a few minutes." };
+    case "network":
+      return { title: `Couldn’t reach ${label}`, desc: "Check this computer’s internet connection, then try again." };
+    case "protocol":
+      return { title: `${label} sent a response the exporter didn’t expect`, desc: err.error || "Try again; if it keeps happening, share the error with the Slash team." };
+    case "bad_request":
+      if (status === 422) return { title: `${label} rejected the request (422)`, desc: "Pick a different history range, or export all history." };
+      return { title: `${label} rejected the request${status ? ` (${status})` : ""}`, desc: err.error || "Try again in a moment." };
+    case "not_found":
+      return { title: `${label} doesn’t have this for your account`, desc: err.error || "Try again in a moment." };
+    default:
+      return { title: `Something went wrong talking to ${label}`, desc: err.error || "Try again in a moment." };
   }
-  if (status === 403 && scopes.length) {
-    const list = scopes.join(", ");
-    return { title: "Ramp turned down this app (403)", desc: `Turn on ${list} for this app in Ramp, then try again. Your Client ID and Secret don’t change.` };
-  }
-  if (status === 403) {
-    return { title: "Ramp turned down this app (403)", desc: "The app is missing one or more of the 10 read scopes below. Turn them all on in Ramp, then try again." };
-  }
-  if (status === 422) {
-    return { title: "Ramp rejected the date range (422)", desc: "Pick a different history range, or export all history." };
-  }
-  return { title: "Something went wrong talking to Ramp", desc: err.error || "Try again in a moment." };
 }
 function showError(el, err) {
   const { title, desc } = errorCopy(err);
+  const who = src()?.label || "The platform";
   el.innerHTML = `${ICON.alert}<div class="body-col"><span class="title">${esc(title)}</span><span class="desc">${esc(desc)}</span>${
-    err.rampSays ? `<span class="raw">Ramp says: ${esc(err.rampSays)}</span>` : ""}</div>`;
+    err.detail ? `<span class="raw">${esc(who)} says: ${esc(err.detail)}</span>` : ""}</div>`;
   el.hidden = false;
 }
-function isAuthError(err) { return err.status === 401 || err.status === 403 || err.network; }
+const isConnectError = (err) => err.kind === "auth" || err.network;
 
 function showConnectError(err) {
   showError($("#connect-error"), err);
@@ -552,20 +633,120 @@ function clearConnectError() {
   renderScopes([]);
 }
 
-// ---------- 1 · connect ----------
-function renderScopes(missing) {
-  $("#scopes").innerHTML = SCOPES.map((s) => `<span class="scope${missing.includes(s) ? " missing" : ""}">${s}</span>`).join("");
+// ---------- 1 · platform ----------
+function renderPlatforms() {
+  $("#platforms").innerHTML = state.sources.map((s) => `
+    <button class="choice" type="button" role="radio" aria-checked="${s.id === state.pickedId}" data-source="${s.id}">
+      <span class="tile letter-tile">${esc(s.label[0])}</span>
+      <span class="text"><span class="label">${esc(s.label)}</span><span>${esc(s.tagline)}</span></span>
+      <span class="radio" aria-hidden="true"></span>
+    </button>`).join("");
 }
-function credentials() {
-  return { clientId: $("#cid").value.trim(), clientSecret: $("#csec").value.trim() };
-}
-$("#toggle-secret").addEventListener("click", () => {
-  const input = $("#csec"), show = input.type === "password";
-  input.type = show ? "text" : "password";
-  $("#toggle-secret").setAttribute("aria-label", show ? "Hide secret" : "Show secret");
+$("#platforms").addEventListener("click", (e) => {
+  const b = e.target.closest(".choice");
+  if (!b) return;
+  state.pickedId = b.dataset.source;
+  renderPlatforms(); renderFooter();
 });
-for (const id of ["#cid", "#csec"]) {
-  $(id).addEventListener("keydown", (e) => { if (e.key === "Enter") connect(); });
+$("#platforms").addEventListener("dblclick", (e) => { if (e.target.closest(".choice")) pickPlatform(); });
+
+function pickPlatform() {
+  if (!state.pickedId) return;
+  if (state.pickedId !== state.sourceId) {
+    state.sourceId = state.pickedId;
+    state.access = null; state.accountName = null; state.result = null;
+    state.selected = new Set(src().categories.map((c) => c.id));
+    $("#history").value = "all";
+    $("#custom-range").hidden = true;
+    $("#choose-error").hidden = true;
+    renderConnect();
+    clearConnectError();
+  }
+  goTo("connect");
+  $("#cred-fields input")?.focus();
+}
+
+// ---------- 2 · connect ----------
+function renderConnect() {
+  const s = src();
+  const saved = state.creds[s.id] || {};
+  const many = s.credentials.length > 1;
+  $("#connect-intro").textContent = `Paste the ${listOf(s.credentials.map((c) => c.label))} from ${s.id === "ramp" ? "a read-only Ramp developer app" : s.label}. ${many ? "They’re" : "It’s"} held in memory on this computer and only ever sent to ${s.label}.`;
+  $("#cred-fields").innerHTML = s.credentials.map((c, i) => `
+    <div class="field">
+      <label for="cred-${c.key}">${esc(c.label)} <span class="req">*</span></label>
+      <div class="input">
+        <input id="cred-${c.key}" data-key="${c.key}" type="${c.secret ? "password" : "text"}" autocomplete="off" spellcheck="false" placeholder="${esc(c.placeholder || "")}" value="${esc(saved[c.key] || "")}" />
+        ${c.secret ? `<button class="icon-btn" type="button" data-toggle="${c.key}" aria-label="Show ${esc(c.label.toLowerCase())}">${ICON.eye}</button>` : ""}
+      </div>
+      <span class="caption hint" id="hint-${c.key}" hidden></span>
+      ${i === s.credentials.length - 1 ? '<span class="caption subtle">Never saved to disk or written to logs.</span>' : ""}
+    </div>`).join("");
+  $("#setup-title").textContent = s.id === "ramp" ? "Create the app in Ramp" : `Create a token in ${s.label}`;
+  $("#setup-link").href = s.setup.url;
+  $("#setup-link span").textContent = s.setup.linkLabel;
+  $("#setup-steps").innerHTML = s.setup.steps.map((t, i) => {
+    const scopes = i === s.setup.steps.length - 1 && s.id === "ramp" ? '<div class="scopes" id="scopes"></div>' : "";
+    return `<li><span class="num">${i + 1}</span><div>${esc(t)}${scopes}</div></li>`;
+  }).join("");
+  $("#setup-note").textContent = s.setup.scopesNote || "";
+  renderScopes([]);
+  for (const c of s.credentials) checkShape(c.key);
+}
+function renderScopes(missing) {
+  const el = $("#scopes");
+  if (el) el.innerHTML = (src()?.scopes || []).map((sc) => `<span class="scope${missing.includes(sc) ? " missing" : ""}">${esc(sc)}</span>`).join("");
+}
+function checkShape(key) {
+  const s = src(), input = $(`#cred-${CSS.escape(key)}`), hint = $(`#hint-${CSS.escape(key)}`);
+  if (!input || !hint) return;
+  const v = input.value.trim().replace(/^["'`]+|["'`]+$/g, "").replace(/^bearer\s+/i, "");
+  const match = v ? TOKEN_SHAPES.find((t) => t.re.test(v)) : null;
+  let html = "";
+  if (match && match.source !== s.id) {
+    const other = state.sources.find((x) => x.id === match.source);
+    html = `This looks like a ${esc(other.label)} credential, not ${esc(s.label)}. <button class="link-btn" type="button" data-switch="${other.id}">Switch to ${esc(other.label)}</button>`;
+  } else if (s.id === "ramp" && key === "clientId" && /^ramp_sec_/i.test(v)) {
+    html = "This looks like the Client Secret. The Client ID starts with ramp_id_.";
+  } else if (s.id === "ramp" && key === "clientSecret" && /^ramp_id_/i.test(v)) {
+    html = "This looks like the Client ID. The Client Secret starts with ramp_sec_.";
+  }
+  hint.innerHTML = html;
+  hint.hidden = !html;
+}
+$("#cred-fields").addEventListener("input", (e) => {
+  const key = e.target.dataset?.key;
+  if (!key) return;
+  (state.creds[state.sourceId] ||= {})[key] = e.target.value;
+  checkShape(key);
+});
+$("#cred-fields").addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.matches("input")) connect(); });
+$("#cred-fields").addEventListener("click", (e) => {
+  const t = e.target.closest("[data-toggle]");
+  if (t) {
+    const input = $(`#cred-${CSS.escape(t.dataset.toggle)}`), show = input.type === "password";
+    input.type = show ? "text" : "password";
+    t.setAttribute("aria-label", t.getAttribute("aria-label").replace(show ? "Show" : "Hide", show ? "Hide" : "Show"));
+    return;
+  }
+  const sw = e.target.closest("[data-switch]");
+  if (sw) {
+    const moved = { ...(state.creds[state.sourceId] || {}) };
+    state.pickedId = sw.dataset.switch;
+    renderPlatforms();
+    pickPlatform();
+    const target = src();
+    if (target.credentials.length === 1) {
+      const value = Object.values(moved).find((v) => TOKEN_SHAPES.some((t) => t.source === target.id && t.re.test(v.trim())));
+      if (value) { $(`#cred-${target.credentials[0].key}`).value = value; (state.creds[target.id] ||= {})[target.credentials[0].key] = value; checkShape(target.credentials[0].key); }
+    }
+  }
+});
+
+function credentials() {
+  const out = {};
+  for (const c of src().credentials) out[c.key] = ($(`#cred-${CSS.escape(c.key)}`)?.value || "").trim();
+  return out;
 }
 
 async function postJson(path, body) {
@@ -575,73 +756,116 @@ async function postJson(path, body) {
   } catch {
     return { ok: false, network: true };
   }
-  return res.json();
+  try { return await res.json(); }
+  catch { return { ok: false, error: `The exporter answered ${res.status} without details.` }; }
 }
 
 async function connect() {
   if (state.busy) return;
-  const creds = credentials();
-  if (!creds.clientId || !creds.clientSecret) {
-    return showConnectError({ error: "Enter both your Client ID and Client Secret." });
-  }
-  state.busy = true; renderFooter();
-  const data = await postJson("/api/connect", creds);
+  const s = src(), creds = credentials();
+  const missing = s.credentials.filter((c) => !creds[c.key]).map((c) => c.label);
+  if (missing.length) return showConnectError({ kind: "request", error: `Enter your ${listOf(missing)}.` });
+  state.busy = true; renderFooter(); renderSteps();
+  const data = await postJson("/api/connect", { source: s.id, credentials: creds });
   state.busy = false;
-  if (!data.ok) { showConnectError(data); renderFooter(); return; }
+  if (state.sourceId !== s.id) return;
+  if (!data.ok) { showConnectError(data); renderFooter(); renderSteps(); return; }
   clearConnectError();
+  state.access = data.access || {};
+  state.accountName = data.accountName || null;
+  state.selected = new Set(s.categories.filter((c) => readable(c).length > 0).map((c) => c.id));
+  renderChoices();
   goTo("choose");
 }
 
-// ---------- 2 · choose ----------
+// ---------- 3 · choose ----------
+const accessOf = (name) => state.access?.[name]?.status || "unchecked";
+const readable = (cat) => cat.resources.filter((n) => ["ok", "unchecked"].includes(accessOf(n)));
+const blocked = (cat) => cat.resources.filter((n) => !["ok", "unchecked"].includes(accessOf(n)));
+
 function renderChoices() {
-  $("#choices").innerHTML = CATEGORIES.map((c) => `
-    <button class="choice" type="button" role="checkbox" aria-checked="${state.selected.has(c.id)}" data-cat="${c.id}">
-      <span class="tile"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="oklch(31.2% 0.009 97.7)" stroke-width="1.4" aria-hidden="true">${c.icon}</svg></span>
-      <span class="text"><span class="label">${esc(c.label)}</span><span>${esc(c.desc)}</span></span>
+  const s = src();
+  $("#choices").innerHTML = s.categories.map((c) => {
+    const open = readable(c), shut = blocked(c);
+    const none = open.length === 0;
+    const denied = shut.some((n) => accessOf(n) === "denied");
+    let desc = esc(c.description);
+    if (none) desc = denied ? "This token can’t read any of this." : `${esc(s.label)} doesn’t have this for your account.`;
+    else if (shut.length) desc += `<span class="choice-warn">${esc(`Will skip ${listOf(shut.map((n) => resLabel(n).toLowerCase()))}`)}</span>`;
+    return `
+    <button class="choice" type="button" role="checkbox" aria-checked="${state.selected.has(c.id)}" ${none ? 'aria-disabled="true"' : ""} data-cat="${c.id}">
+      <span class="tile"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="oklch(31.2% 0.009 97.7)" stroke-width="1.4" aria-hidden="true">${CATEGORY_ICON[c.id] || CATEGORY_ICON.accounts}</svg></span>
+      <span class="text"><span class="label">${esc(c.label)}</span><span>${desc}</span></span>
       <span class="radio" aria-hidden="true"></span>
-    </button>`).join("");
-  $("#history-field").hidden = !state.selected.has("vendors");
+    </button>`;
+  }).join("");
+  renderAccessNote();
+  renderHistory();
+}
+function renderAccessNote() {
+  const s = src();
+  const denied = s.categories.filter((c) => state.selected.has(c.id)).flatMap(blocked).filter((n) => accessOf(n) === "denied");
+  const el = $("#access-note");
+  if (!denied.length) { el.hidden = true; return; }
+  const items = denied.map((n) => { const sc = state.access[n].scope || s.resources[n].scope; return `<li>${esc(resLabel(n))}${sc ? ` <span class="scope">${esc(sc)}</span>` : ""}</li>`; }).join("");
+  el.innerHTML = `${ICON.warn}<div class="body-col"><span class="title">This token can’t read everything</span><span class="desc">These will be skipped. To include them, give the token read access in ${esc(s.label)} and reconnect.</span><ul class="skip-list">${items}</ul></div>`;
+  el.hidden = false;
+}
+function datedSelected() {
+  const s = src();
+  return s.categories.filter((c) => state.selected.has(c.id)).flatMap(readable).filter((n) => s.resources[n].dated);
+}
+function renderHistory() {
+  const dated = datedSelected();
+  $("#history-field").hidden = dated.length === 0;
+  const v = $("#history").value;
+  const what = listOf([...new Set(dated.map((n) => resLabel(n).toLowerCase()))]);
+  const span = { all: `Everything since your ${src().label} account opened.`, "12m": "The last 12 months.", ytd: "Since January 1.", custom: "Between these dates, inclusive." }[v];
+  $("#history-hint").textContent = `${span} Applies to ${what}; everything else is exported in full.`;
 }
 $("#choices").addEventListener("click", (e) => {
   const b = e.target.closest(".choice");
-  if (!b) return;
+  if (!b || b.getAttribute("aria-disabled") === "true") return;
   const id = b.dataset.cat;
   state.selected.has(id) ? state.selected.delete(id) : state.selected.add(id);
   renderChoices(); renderFooter();
 });
 
-const HISTORY_HINT = {
-  all: "Everything since your Ramp account opened.",
-  "12m": "Bills issued and transactions made in the last 12 months.",
-  ytd: "Bills issued and transactions made since January 1.",
-  custom: "Bills issued and transactions made between these dates.",
-};
-function isoDay(d) { return d.toISOString().slice(0, 10); }
+function isoDay(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 function dateRange() {
+  if ($("#history-field").hidden) return undefined;
   const v = $("#history").value, today = new Date();
   switch (v) {
     case "all": return undefined;
     case "12m": { const from = new Date(today); from.setFullYear(from.getFullYear() - 1); return { from: isoDay(from), to: isoDay(today) }; }
     case "ytd": return { from: `${today.getFullYear()}-01-01`, to: isoDay(today) };
     case "custom": return { from: $("#from").value, to: $("#to").value };
+    default: throw new Error(`Unknown history option: ${v}`);
   }
 }
 $("#history").addEventListener("change", () => {
-  const v = $("#history").value;
-  $("#custom-range").hidden = v !== "custom";
-  $("#history-hint").textContent = HISTORY_HINT[v];
+  $("#custom-range").hidden = $("#history").value !== "custom";
+  renderHistory();
 });
 
-// ---------- 3 · export ----------
+// ---------- 4 · export ----------
 function renderProgress() {
-  const done = state.rows.filter((r) => r.state === "done").length;
-  $("#files-done").textContent = `${done} of ${state.rows.length} files`;
+  const finished = state.rows.filter((r) => ["done", "skipped", "failed"].includes(r.state)).length;
+  $("#files-done").textContent = `${finished} of ${state.rows.length}`;
   $("#progress-rows").innerHTML = state.rows.map((r) => {
-    let meta = "Waiting";
-    if (r.state === "done") meta = fmtCount(r.count);
-    else if (r.state === "running") meta = r.total ? `${fmtCount(r.done)} of ${fmtCount(r.total)} vendors` : "Fetching…";
-    const icon = r.state === "done" ? ICON.rowDone : r.state === "running" ? ICON.rowRunning : ICON.upcoming;
-    return `<div class="prow" data-state="${r.state}"><span class="ico">${icon}</span><span class="name">${esc(RESOURCE[r.name]?.label || r.name)}</span><span class="meta">${meta}</span></div>`;
+    let meta = "Waiting", icon = ICON.upcoming;
+    switch (r.state) {
+      case "done": meta = fmtCount(r.count); icon = ICON.rowDone; break;
+      case "running": {
+        const parent = src().resources[r.name]?.parent;
+        meta = r.total ? `${fmtCount(r.done)} of ${fmtCount(r.total)} ${resLabel(parent).toLowerCase()}` : "Fetching…";
+        icon = ICON.rowRunning;
+        break;
+      }
+      case "skipped": meta = "Skipped"; icon = ICON.rowSkipped; break;
+      case "failed": meta = "Failed"; icon = ICON.alert; break;
+    }
+    return `<div class="prow" data-state="${r.state}" ${r.reason ? `title="${esc(r.reason)}"` : ""}><span class="ico">${icon}</span><span class="name">${esc(resLabel(r.name))}</span><span class="meta">${meta}</span></div>`;
   }).join("");
 }
 
@@ -660,45 +884,51 @@ function onProgress(e) {
     case "resource_done":
       if (row) Object.assign(row, { state: "done", count: e.count });
       break;
+    case "resource_skipped":
+      if (row) Object.assign(row, { state: e.status, reason: e.reason });
+      break;
   }
   renderProgress();
 }
 
 async function startExport() {
   if (state.busy || state.selected.size === 0) return;
+  const s = src();
   const range = dateRange();
-  if (range && (!range.from || !range.to || range.from > range.to)) {
-    return showError($("#choose-error"), { error: "Pick a start and end date, with the start before the end." });
-  }
+  if (range && (!range.from || !range.to)) return showError($("#choose-error"), { kind: "request", error: "Pick both a start and an end date." });
+  if (range && range.from > range.to) return showError($("#choose-error"), { kind: "request", error: "The start date is after the end date." });
   $("#choose-error").hidden = true;
-  const categories = CATEGORIES.filter((c) => state.selected.has(c.id)).map((c) => c.id);
-  state.rows = CATEGORIES.filter((c) => state.selected.has(c.id)).flatMap((c) => c.resources).map((name) => ({ name, state: "waiting" }));
+  const categories = s.categories.filter((c) => state.selected.has(c.id)).map((c) => c.id);
+  const wanted = new Set(s.categories.filter((c) => state.selected.has(c.id)).flatMap((c) => c.resources));
+  state.rows = Object.keys(s.resources).filter((n) => wanted.has(n)).map((name) => ({ name, state: "waiting" }));
+  $("#export-intro").textContent = s.rateLimitRps < 2
+    ? `${s.label} allows about one request a second, so larger accounts can take a while. Keep this tab open.`
+    : "This usually takes a few minutes. Keep this tab open.";
+  $("#export-account").textContent = state.accountName || `${s.label} account`;
   renderProgress();
   goTo("export");
 
-  state.abort = new AbortController();
+  const controller = new AbortController();
+  state.abort = controller;
   let outcome;
   try {
     const res = await fetch("/api/export", {
       method: "POST",
       headers: { "content-type": "application/json", accept: "application/x-ndjson" },
-      body: JSON.stringify({ ...credentials(), categories, dateRange: range }),
-      signal: state.abort.signal,
+      body: JSON.stringify({ source: s.id, credentials: credentials(), categories, dateRange: range }),
+      signal: controller.signal,
     });
-    if (!res.headers.get("content-type")?.includes("ndjson")) {
-      outcome = await res.json();
-    } else {
-      outcome = await readStream(res);
-    }
+    outcome = res.headers.get("content-type")?.includes("ndjson") ? await readStream(res) : await res.json();
   } catch (err) {
     if (err.name === "AbortError") return;
     outcome = { ok: false, network: true };
   } finally {
-    state.abort = null;
+    if (state.abort === controller) state.abort = null;
   }
+  if (state.step !== "export") return;
   if (outcome?.ok) return showReview(outcome);
   const err = outcome || { ok: false, error: "The export ended without a result." };
-  if (isAuthError(err)) { showConnectError(err); goTo("connect"); }
+  if (isConnectError(err)) { showConnectError(err); goTo("connect"); }
   else { showError($("#choose-error"), err); goTo("choose"); }
 }
 
@@ -723,98 +953,127 @@ async function readStream(res) {
 
 function cancelExport() {
   state.abort?.abort();
+  state.abort = null;
   goTo("choose");
 }
 
-// ---------- 4 · review ----------
-function lookups(resources) {
-  const by = (name, label) => new Map((resources[name] || []).map((r) => [r.id, label(r)]));
-  return {
-    users: by("users", fullName),
-    departments: by("departments", (r) => r.name),
-    entities: by("entities", (r) => r.entity_name || r.name),
-    vendors: by("vendors", (r) => r.name),
-    spendPrograms: by("spend-programs", (r) => r.display_name || r.name),
-  };
+// ---------- 5 · review ----------
+function lookups(sourceId, resources) {
+  const by = (name, label, id = "id") => new Map((resources[name] || []).map((r) => [r[id], label(r)]));
+  switch (sourceId) {
+    case "ramp":
+      return {
+        users: by("users", fullName),
+        departments: by("departments", (r) => r.name),
+        entities: by("entities", (r) => r.entity_name || r.name),
+        vendors: by("vendors", (r) => r.name),
+        spendPrograms: by("spend-programs", (r) => r.display_name || r.name),
+      };
+    case "mercury":
+      return {
+        users: by("users", fullName, "userId"),
+        accounts: by("accounts", (r) => r.nickname || r.name),
+        customers: by("customers", (r) => r.name),
+      };
+    case "brex":
+      return { users: by("users", fullName), departments: by("departments", (r) => r.name) };
+    case "rho":
+      return { users: new Map([...by("users", fullName), ...by("removed_users", fullName)]) };
+    default:
+      return {};
+  }
 }
 
-/** Curated columns per resource; any column that's empty for every row is dropped. */
-const COLUMNS = {
-  users: [
-    { label: "Name", kind: "name", w: 2, value: (r) => fullName(r) },
-    { label: "Email", w: 2.4, value: (r) => r.email },
-    { label: "Role", kind: "enum", w: 1.2, value: (r) => r.role },
-    { label: "Department", w: 1.4, value: (r, l) => l.departments.get(r.department_id) },
-    { label: "Status", kind: "status", w: 1.1, value: (r) => r.status },
-  ],
-  departments: [
-    { label: "Name", kind: "name", w: 3, value: (r) => r.name },
-    { label: "Ramp ID", kind: "mono", w: 3, value: (r) => r.id },
-  ],
-  locations: [
-    { label: "Name", kind: "name", w: 2.5, value: (r) => r.name },
-    { label: "Entity", w: 2, value: (r, l) => l.entities.get(r.entity_id) },
-    { label: "Ramp ID", kind: "mono", w: 2.5, value: (r) => r.id },
-  ],
-  entities: [
-    { label: "Name", kind: "name", w: 2.5, value: (r) => r.entity_name || r.name },
-    { label: "Currency", w: 1, value: (r) => r.currency },
-    { label: "Ramp ID", kind: "mono", w: 2.5, value: (r) => r.id },
-  ],
-  cards: [
-    { label: "Card", kind: "name", w: 2, value: (r) => r.display_name },
-    { label: "Cardholder", w: 1.8, value: (r, l) => r.cardholder_name || l.users.get(r.cardholder_id) },
-    { label: "Last 4", kind: "mono", w: 0.8, value: (r) => r.last_four },
-    { label: "Type", w: 0.9, value: (r) => (typeof r.is_physical === "boolean" ? (r.is_physical ? "Physical" : "Virtual") : null) },
-    { label: "Status", kind: "status", w: 1.1, value: (r) => r.state },
-  ],
-  "spend-programs": [
-    { label: "Name", kind: "name", w: 2.2, value: (r) => r.display_name || r.name },
-    { label: "Description", w: 3, value: (r) => r.description },
-    { label: "Ramp ID", kind: "mono", w: 2, value: (r) => r.id },
-  ],
-  funds: [
-    { label: "Name", kind: "name", w: 2.4, value: (r) => r.display_name || r.name },
-    { label: "Spend program", w: 2, value: (r, l) => l.spendPrograms.get(r.spend_program_id) },
-    { label: "Ramp ID", kind: "mono", w: 2, value: (r) => r.id },
-  ],
-  vendors: [
-    { label: "Vendor", kind: "name", w: 2.6, value: (r) => r.name },
-    { label: "Entity", w: 1.6, value: (r, l) => l.entities.get(r.entity_id) },
-    { label: "Created", kind: "date", w: 1, value: (r) => r.created_at },
-    { label: "Ramp ID", kind: "mono", w: 2, value: (r) => r.id },
-  ],
-  vendor_contacts: [
-    { label: "Name", kind: "name", w: 2, value: (r) => fullName(r) || r.name },
-    { label: "Email", w: 2.2, value: (r) => r.email },
-    { label: "Phone", w: 1.3, value: (r) => r.phone },
-    { label: "Vendor", w: 1.6, value: (r, l) => l.vendors.get(r.vendor_id) },
-  ],
-  bills: [
-    { label: "Vendor", kind: "name", w: 2.1, value: (r, l) => pick(r, "vendor.remote_name", "vendor.name", "vendor_name") || l.vendors.get(pick(r, "vendor.id", "vendor_id")) },
-    { label: "Invoice", kind: "mono", w: 1.3, value: (r) => r.invoice_number },
-    { label: "Issued", kind: "date", w: 1, value: (r) => r.issued_at },
-    { label: "Due", kind: "date", w: 1, value: (r) => r.due_at },
-    { label: "Amount", kind: "money", w: 1.2, value: (r) => r.amount },
-    { label: "Status", kind: "status", w: 1, value: (r) => r.payment_status || r.status },
-  ],
-  transactions: [
-    { label: "Merchant", kind: "name", w: 2.2, value: (r) => r.merchant_name },
-    { label: "Date", kind: "date", w: 1, value: (r) => r.user_transaction_time },
-    { label: "Cardholder", w: 1.6, value: (r, l) => fullName(r.card_holder) || l.users.get(r.card_holder?.user_id) },
-    { label: "Amount", kind: "money", w: 1.2, value: (r) => (typeof r.amount === "number" ? { major: r.amount, currency: r.currency_code } : r.amount) },
-    { label: "Status", kind: "status", w: 1, value: (r) => r.state },
-  ],
+const C = {
+  name: (label, value, w = 2.2) => ({ label, kind: "name", w, value }),
+  text: (label, value, w = 1.6) => ({ label, w, value }),
+  mono: (label, value, w = 1.4) => ({ label, kind: "mono", w, value }),
+  masked: (label, value, w = 1.1) => ({ label, kind: "mono", w, value: (r, l) => mask(value(r, l)) }),
+  date: (label, value, w = 1) => ({ label, kind: "date", w, value }),
+  money: (label, value, w = 1.2) => ({ label, kind: "money", w, value }),
+  status: (label, value, w = 1.1) => ({ label, kind: "status", w, value }),
+  enumv: (label, value, w = 1.2) => ({ label, kind: "enum", w, value }),
+  id: (value = (r) => r.id) => ({ label: "ID", kind: "mono", w: 2, value, isId: true }),
 };
-const GENERIC_PRIORITY = ["name", "display_name", "entity_name", "email", "role", "status", "state", "amount", "created_at", "id"];
+const named = (w) => [C.name("Name", (r) => r.name, w || 2.4), C.text("Description", (r) => r.description, 3), C.id()];
+
+/** Curated columns per platform and resource; any column that's empty for every row is dropped. */
+const COLUMNS = {
+  ramp: {
+    users: [C.name("Name", (r) => fullName(r), 2), C.text("Email", (r) => r.email, 2.4), C.enumv("Role", (r) => r.role), C.text("Department", (r, l) => l.departments.get(r.department_id), 1.4), C.status("Status", (r) => r.status)],
+    departments: [C.name("Name", (r) => r.name, 3), C.id()],
+    locations: [C.name("Name", (r) => r.name, 2.5), C.text("Entity", (r, l) => l.entities.get(r.entity_id), 2), C.id()],
+    entities: [C.name("Name", (r) => r.entity_name || r.name, 2.5), C.text("Currency", (r) => r.currency, 1), C.id()],
+    cards: [C.name("Card", (r) => r.display_name, 2), C.text("Cardholder", (r, l) => r.cardholder_name || l.users.get(r.cardholder_id), 1.8), C.mono("Last 4", (r) => r.last_four, 0.8), C.text("Type", (r) => (typeof r.is_physical === "boolean" ? (r.is_physical ? "Physical" : "Virtual") : null), 0.9), C.status("Status", (r) => r.state)],
+    "spend-programs": [C.name("Name", (r) => r.display_name || r.name), C.text("Description", (r) => r.description, 3), C.id()],
+    funds: [C.name("Name", (r) => r.display_name || r.name, 2.4), C.text("Spend program", (r, l) => l.spendPrograms.get(r.spend_program_id), 2), C.id()],
+    vendors: [C.name("Vendor", (r) => r.name, 2.6), C.text("Entity", (r, l) => l.entities.get(r.entity_id)), C.date("Created", (r) => r.created_at), C.id()],
+    vendor_contacts: [C.name("Name", (r) => fullName(r) || r.name, 2), C.text("Email", (r) => r.email, 2.2), C.text("Phone", (r) => r.phone, 1.3), C.text("Vendor", (r, l) => l.vendors.get(r.vendor_id))],
+    bills: [C.name("Vendor", (r, l) => pick(r, "vendor.remote_name", "vendor.name", "vendor_name") || l.vendors.get(pick(r, "vendor.id", "vendor_id")), 2.1), C.mono("Invoice", (r) => r.invoice_number, 1.3), C.date("Issued", (r) => r.issued_at), C.date("Due", (r) => r.due_at), C.money("Amount", (r) => r.amount), C.status("Status", (r) => r.payment_status || r.status, 1)],
+    transactions: [C.name("Merchant", (r) => r.merchant_name), C.date("Date", (r) => r.user_transaction_time), C.text("Cardholder", (r, l) => fullName(r.card_holder) || l.users.get(r.card_holder?.user_id)), C.money("Amount", (r) => (typeof r.amount === "number" ? { major: r.amount, currency: r.currency_code } : r.amount)), C.status("Status", (r) => r.state, 1)],
+  },
+  mercury: {
+    organization: [C.name("Name", (r) => r.legalBusinessName, 3), C.enumv("Kind", (r) => r.kind), C.id()],
+    users: [C.name("Name", (r) => fullName(r), 2), C.text("Email", (r) => r.email, 2.4), C.enumv("Role", (r) => r.organizationRole), C.id((r) => r.userId)],
+    accounts: [C.name("Account", (r) => r.nickname || r.name), C.enumv("Kind", (r) => r.kind, 1), C.masked("Number", (r) => r.accountNumber), C.money("Balance", (r) => r.currentBalance), C.status("Status", (r) => r.status, 1)],
+    credit_accounts: [C.mono("Account", (r) => r.id, 2.4), C.money("Balance", (r) => r.currentBalance), C.money("Available", (r) => r.availableBalance), C.status("Status", (r) => r.status)],
+    treasury_accounts: [C.mono("Account", (r) => r.id, 2.4), C.money("Balance", (r) => r.currentBalance), C.money("Available", (r) => r.availableBalance), C.status("Status", (r) => r.status)],
+    statements: [C.name("Account", (r, l) => l.accounts.get(r.accountId)), C.date("From", (r) => r.startDate), C.date("To", (r) => r.endDate), C.money("Ending balance", (r) => r.endingBalance)],
+    transactions: [C.name("Counterparty", (r) => r.counterpartyNickname || r.counterpartyName), C.date("Date", (r) => r.postedAt || r.createdAt), C.text("Account", (r, l) => l.accounts.get(r.accountId)), C.money("Amount", (r) => r.amount), C.enumv("Kind", (r) => r.kind, 1.1), C.status("Status", (r) => r.status, 1)],
+    categories: [C.name("Name", (r) => r.name, 3), C.id()],
+    cards: [C.name("Card", (r) => r.nickname || r.nameOnCard), C.text("Cardholder", (r, l) => l.users.get(r.userId)), C.mono("Last 4", (r) => r.lastFour, 0.8), C.enumv("Kind", (r) => r.kind, 1), C.status("Status", (r) => r.status)],
+    recipients: [C.name("Recipient", (r) => r.nickname || r.name), C.text("Email", (r) => (r.emails || [])[0] || r.contactEmail, 2), C.enumv("Pays by", (r) => r.defaultPaymentMethod), C.date("Last paid", (r) => r.dateLastPaid), C.status("Status", (r) => r.status, 1)],
+    customers: [C.name("Customer", (r) => r.name, 2.4), C.text("Email", (r) => r.email, 2.4), C.id()],
+    invoices: [C.name("Customer", (r, l) => l.customers.get(r.customerId)), C.mono("Invoice", (r) => r.invoiceNumber, 1.2), C.date("Date", (r) => r.invoiceDate), C.date("Due", (r) => r.dueDate), C.money("Amount", (r) => r.amount), C.status("Status", (r) => r.status, 1)],
+  },
+  brex: {
+    company: [C.name("Name", (r) => r.legal_name, 3), C.enumv("Account type", (r) => r.accountType), C.id()],
+    users: [C.name("Name", (r) => fullName(r), 2), C.text("Email", (r) => r.email, 2.4), C.text("Department", (r, l) => l.departments.get(r.department_id), 1.4), C.status("Status", (r) => r.status)],
+    departments: named(), locations: named(), titles: named(), cost_centers: named(),
+    legal_entities: [C.name("Name", (r) => r.displayName, 2.6), C.status("Status", (r) => r.status), C.id()],
+    cards: [C.name("Card", (r) => r.card_name, 2), C.text("Cardholder", (r, l) => l.users.get(r.owner?.user_id), 1.8), C.mono("Last 4", (r) => r.last_four, 0.8), C.enumv("Type", (r) => r.card_type, 1), C.status("Status", (r) => r.status)],
+    budgets: [C.name("Budget", (r) => r.name), C.enumv("Period", (r) => r.period_type, 1), C.money("Limit", (r) => r.limit), C.status("Status", (r) => r.budget_status), C.id((r) => r.budget_id)],
+    spend_limits: [C.name("Spend limit", (r) => r.name), C.enumv("Resets", (r) => r.period_recurrence_type), C.status("Status", (r) => r.status), C.id()],
+    budget_programs: [C.name("Program", (r) => r.name), C.text("Description", (r) => r.description, 2.4), C.status("Status", (r) => r.budget_program_status), C.date("Created", (r) => r.created_at)],
+    card_accounts: [C.mono("Account", (r) => r.id, 2), C.money("Balance", (r) => r.current_balance), C.money("Available", (r) => r.available_balance), C.money("Limit", (r) => r.account_limit), C.status("Status", (r) => r.status)],
+    card_statements: [C.date("From", (r) => r.period?.start_date), C.date("To", (r) => r.period?.end_date), C.money("Starting balance", (r) => r.start_balance), C.money("Ending balance", (r) => r.end_balance), C.id()],
+    card_transactions: [C.name("Description", (r) => r.description, 2.6), C.date("Posted", (r) => r.posted_at_date), C.money("Amount", (r) => r.amount), C.enumv("Type", (r) => r.type)],
+    cash_accounts: [C.name("Account", (r) => r.name), C.masked("Number", (r) => r.account_number), C.money("Balance", (r) => r.current_balance), C.money("Available", (r) => r.available_balance), C.status("Status", (r) => r.status, 1)],
+    cash_statements: [C.date("From", (r) => r.period?.start_date), C.date("To", (r) => r.period?.end_date), C.money("Starting balance", (r) => r.start_balance), C.money("Ending balance", (r) => r.end_balance), C.mono("Account", (r) => r.cash_account_id)],
+    cash_transactions: [C.name("Description", (r) => r.description, 2.6), C.date("Posted", (r) => r.posted_at_date), C.money("Amount", (r) => r.amount), C.enumv("Type", (r) => r.type)],
+    linked_accounts: [C.name("Bank", (r) => pick(r, "bank_details.name", "bank_details.bank_name") || "Linked account"), C.mono("Last 4", (r) => r.last_four, 0.8), C.money("Balance", (r) => r.current_balance), C.id()],
+    vendors: [C.name("Vendor", (r) => r.company_name, 2.4), C.text("Email", (r) => r.email, 2.2), C.text("Phone", (r) => r.phone, 1.3), C.id()],
+    transfers: [C.name("Payee", (r) => r.display_name || pick(r, "counterparty.name") || r.description), C.date("Date", (r) => r.process_date), C.enumv("Method", (r) => r.payment_type, 1), C.money("Amount", (r) => r.amount), C.status("Status", (r) => r.status, 1)],
+    expenses: [C.name("Merchant", (r) => pick(r, "merchant.raw_descriptor", "merchant.name") || r.memo), C.date("Date", (r) => r.purchased_at), C.text("User", (r, l) => fullName(r.user) || l.users.get(r.user_id)), C.money("Amount", (r) => r.purchased_amount || r.billing_amount), C.status("Status", (r) => r.status, 1)],
+  },
+  rho: {
+    business: [C.name("Legal name", (r) => r.legal_name, 2.6), C.text("DBA", (r) => r.dba, 2), C.id()],
+    users: [C.name("Name", (r) => fullName(r), 2), C.text("Email", (r) => r.email, 2.4), C.enumv("Role", (r) => r.role_name), C.status("Status", (r) => r.user_status || r.membership_status)],
+    removed_users: [C.name("Name", (r) => fullName(r), 2), C.text("Email", (r) => r.email, 2.4), C.enumv("Role", (r) => r.role_name), C.status("Status", (r) => r.membership_status || r.user_status)],
+    accounts: [C.name("Account", (r) => r.account_name), C.enumv("Type", (r) => r.account_type), C.mono("Number", (r) => (r.account_number_last_4 ? `•••• ${r.account_number_last_4}` : null), 1.1), C.money("Balance", (r) => r.balance)],
+    credit_programs: [C.name("Program", (r) => r.name), C.money("Limit", (r) => r.credit_limit), C.enumv("Repayment", (r) => r.repayment_cadence)],
+    statements: [C.date("From", (r) => r.period_start), C.date("To", (r) => r.period_end), C.enumv("Type", (r) => r.statement_type), C.date("Available", (r) => r.available_at), C.id()],
+    transactions: [C.name("Counterparty", (r) => r.counterparty_name), C.date("Date", (r) => r.initiated_at), C.text("Account", (r) => r.account_name), C.money("Amount", (r) => r.amount), C.status("Status", (r) => r.status, 1)],
+    cards: [C.name("Card", (r) => r.name, 2), C.text("Cardholder", (r) => fullName(r.cardholder), 1.8), C.mono("Last 4", (r) => r.last_4, 0.8), C.enumv("Type", (r) => r.type, 0.9), C.status("Status", (r) => r.status)],
+    scheduled_payments: [C.name("Payee", (r) => r.counterparty?.name), C.money("Amount", (r) => r.amount), C.enumv("Method", (r) => r.payment_type), C.enumv("Repeats", (r) => r.schedule?.frequency), C.id()],
+    expenses: [C.name("Merchant", (r) => r.merchant_name), C.date("Date", (r) => r.transaction_date), C.text("User", (r, l) => l.users.get(r.user_id)), C.money("Amount", (r) => r.amount), C.status("Status", (r) => r.approval_status)],
+    reimbursements: [C.name("Merchant", (r) => r.merchant_name), C.date("Date", (r) => r.transaction_date), C.text("User", (r, l) => l.users.get(r.user_id)), C.money("Amount", (r) => r.amount), C.status("Status", (r) => r.payment_status || r.approval_status)],
+    fields: [C.name("Field", (r) => r.name, 2.4), C.enumv("Type", (r) => r.type), C.status("Status", (r) => r.status), C.id()],
+    customers: [C.name("Customer", (r) => r.legal_name, 2.4), C.text("Email", (r) => r.email, 2.4), C.date("Created", (r) => r.created_at)],
+    invoices: [C.name("Customer", (r) => r.customer?.legal_name || r.customer?.name), C.mono("Invoice", (r) => r.invoice_number, 1.2), C.date("Date", (r) => r.date), C.date("Due", (r) => r.due_date), C.money("Amount", (r) => r.total), C.status("Status", (r) => r.status, 1)],
+  },
+};
+const GENERIC_PRIORITY = ["name", "display_name", "legal_name", "email", "description", "status", "state", "amount", "created_at", "createdAt", "id"];
+const SENSITIVE_KEY = /(account_?number|routing_?number|tin|ein|ssn)$/i;
 
 function columnsFor(resource, rows, l) {
-  const spec = (COLUMNS[resource] || []).filter((c) => rows.some((r) => c.value(r, l) != null && c.value(r, l) !== ""));
+  const s = src();
+  const spec = (COLUMNS[s.id]?.[resource] || []).filter((c) => rows.some((r) => { const v = c.value(r, l); return v != null && v !== ""; }));
   if (spec.length >= 2) return spec;
   const keys = new Set();
-  for (const r of rows.slice(0, 50)) for (const k in r) if (r[k] === null || ["string", "number", "boolean"].includes(typeof r[k])) keys.add(k);
+  for (const r of rows.slice(0, 50)) for (const k in r) if (!SENSITIVE_KEY.test(k) && (r[k] === null || ["string", "number", "boolean"].includes(typeof r[k]))) keys.add(k);
   const ordered = [...GENERIC_PRIORITY.filter((k) => keys.has(k)), ...[...keys].sort().filter((k) => !GENERIC_PRIORITY.includes(k))].slice(0, 6);
-  return ordered.map((k, i) => ({ label: humanize(k), kind: i === 0 ? "name" : k === "id" || k.endsWith("_id") ? "mono" : "", w: 1, value: (r) => r[k] }));
+  return ordered.map((k, i) => ({ label: humanize(k), kind: i === 0 ? "name" : /(^id$|_id$|Id$)/.test(k) ? "mono" : "", w: 1, value: (r) => r[k] }));
 }
 
 function cellHtml(col, v) {
@@ -827,7 +1086,7 @@ function cellHtml(col, v) {
     case "mono": return `<span class="mono">${esc(v)}</span>`;
     case "date": return esc(fmtShortDate(v) || v);
     case "money": {
-      const m = v && typeof v === "object" && "major" in v ? money(v.major, v.currency) : money(v);
+      const m = money(v);
       return m ? esc(m.text) : '<span class="subtle">—</span>';
     }
     case "status": return `<span class="tag ${tone(v)}">${esc(humanize(v))}</span>`;
@@ -839,43 +1098,58 @@ function cellHtml(col, v) {
 function showReview(result) {
   state.result = result;
   state.exportedAt = new Date();
-  state.lookups = lookups(result.resources || {});
-  const present = CATEGORIES.filter((c) => c.resources.some((r) => r in (result.resources || {})));
-  state.tab = present[0]?.id || null;
+  state.lookups = lookups(state.sourceId, result.resources || {});
+  state.tab = presentCategories()[0]?.id || null;
   state.resource = null;
   renderReview();
   goTo("review");
 }
 
-function count(name) {
-  const r = state.result;
-  return r.counts?.[name] ?? (r.resources?.[name] || []).length;
-}
+const exported = (name) => name in (state.result.counts || {}) || name in (state.result.skipped || {});
+const count = (name) => state.result.counts?.[name] ?? 0;
+const skippedOf = (name) => state.result.skipped?.[name];
+const presentCategories = () => src().categories.filter((c) => c.resources.some(exported));
 
 function renderReview() {
-  const r = state.result;
-  const names = Object.keys(r.resources || {});
-  const total = names.reduce((s, n) => s + count(n), 0);
-  const entity = (r.resources?.entities || [])[0];
-  const entityName = entity ? entity.entity_name || entity.name : null;
+  const r = state.result, s = src();
+  const names = Object.keys(r.counts || {});
+  const complete = names.filter((n) => !skippedOf(n));
+  const total = complete.reduce((sum, n) => sum + count(n), 0);
   const when = state.exportedAt.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
   const dot = '<span class="subtle">·</span>';
-  $("#agg").innerHTML = [`<b>${fmtCount(total)}</b> records`, `<b>${names.length}</b> files`, entityName && esc(entityName), esc(when)]
-    .filter(Boolean).join(dot);
+  $("#agg").innerHTML = [`<b>${fmtCount(total)}</b> records`, `<b>${complete.length}</b> files`, esc(state.accountName || s.label), esc(when)].join(dot);
   $("#bundle-path").textContent = r.bundleDir || "";
   $("#bundle-path").title = r.bundleDir || "";
 
-  const present = CATEGORIES.filter((c) => c.resources.some((n) => n in r.resources));
+  const skipped = Object.entries(r.skipped || {});
+  const sn = $("#skipped-note");
+  if (skipped.length) {
+    const items = skipped.map(([n, m]) => `<li><b>${esc(resLabel(n))}</b> — ${esc(m.reason || m.status)}</li>`).join("");
+    sn.innerHTML = `${ICON.warn}<div class="body-col"><span class="title">${skipped.length === 1 ? "1 file" : `${skipped.length} files`} couldn’t be exported</span><span class="desc">Everything else is complete. The manifest records what was skipped and why.</span><ul class="skip-list">${items}</ul></div>`;
+  }
+  sn.hidden = !skipped.length;
+
+  const sensitive = complete.filter((n) => s.resources[n]?.sensitive && count(n) > 0);
+  const sens = $("#sensitive-note");
+  if (sensitive.length) {
+    const which = listOf(sensitive.map((n, i) => (i ? resLabel(n).toLowerCase() : resLabel(n))));
+    sens.innerHTML = `${ICON.lock}<div class="body-col"><span class="title">This folder contains full bank account numbers</span><span class="desc">${esc(which)} include${sensitive.length === 1 ? "s" : ""} complete account and routing numbers, exactly as ${esc(s.label)} returned them. They’re masked here. Keep the folder private and delete it once you’ve moved.</span></div>`;
+  }
+  sens.hidden = !sensitive.length;
+
+  const present = presentCategories();
   $("#tabs").innerHTML = present.map((c) => {
-    const n = c.resources.reduce((s, x) => s + (x in r.resources ? count(x) : 0), 0);
+    const n = c.resources.reduce((sum, x) => sum + (exported(x) ? count(x) : 0), 0);
     return `<button class="tab" type="button" role="tab" aria-selected="${c.id === state.tab}" data-tab="${c.id}">${esc(c.label)} <span class="count">${fmtCount(n)}</span></button>`;
   }).join("");
 
-  const cat = CATEGORIES.find((c) => c.id === state.tab);
-  const resources = cat ? cat.resources.filter((n) => n in r.resources) : [];
+  const cat = s.categories.find((c) => c.id === state.tab);
+  const resources = cat ? cat.resources.filter(exported) : [];
   if (!resources.includes(state.resource)) state.resource = resources.find((n) => count(n) > 0) || resources[0] || null;
-  $("#pills").innerHTML = resources.map((n) =>
-    `<button class="pill" type="button" aria-pressed="${n === state.resource}" data-resource="${n}">${esc(RESOURCE[n]?.label || n)} <span class="n">${fmtCount(count(n))}</span></button>`).join("");
+  $("#pills").innerHTML = resources.map((n) => {
+    const sk = skippedOf(n);
+    return `<button class="pill" type="button" aria-pressed="${n === state.resource}" data-resource="${n}">${esc(resLabel(n))} ${sk ? `<span class="tag ${sk.status === "failed" ? "danger" : ""}">${sk.status === "failed" ? "Failed" : "Skipped"}</span>` : `<span class="n">${fmtCount(count(n))}</span>`}</button>`;
+  }).join("");
   renderTable();
 }
 $("#tabs").addEventListener("click", (e) => {
@@ -893,8 +1167,14 @@ $("#pills").addEventListener("click", (e) => {
 
 function renderTable() {
   const name = state.resource;
-  const rows = (name && state.result.resources[name]) || [];
-  const label = (RESOURCE[name]?.label || "records").toLowerCase();
+  const rows = (name && state.result.resources?.[name]) || [];
+  const label = (name ? resLabel(name) : "records").toLowerCase();
+  const sk = name && skippedOf(name);
+  if (sk) {
+    $("#table").innerHTML = `<div class="empty">${esc(sk.reason || "This couldn’t be exported.")}</div>`;
+    $("#table-caption").textContent = "";
+    return;
+  }
   if (!rows.length) {
     $("#table").innerHTML = `<div class="empty">No ${esc(label)} in this export.</div>`;
     $("#table-caption").textContent = "";
@@ -903,14 +1183,15 @@ function renderTable() {
   const cols = columnsFor(name, rows, state.lookups);
   state.cols = cols;
   const shown = rows.slice(0, TABLE_LIMIT);
-  const head = cols.map((c) => `<th${c.kind === "money" ? ' class="num-col"' : ""}>${esc(c.label)}</th>`).join("");
+  const total = count(name);
+  const head = cols.map((c) => `<th${c.kind === "money" ? ' class="num-col"' : ""}>${esc(c.isId ? `${src().label} ID` : c.label)}</th>`).join("");
   const body = shown.map((row, i) => `<tr data-i="${i}" tabindex="0">${cols.map((c) =>
     `<td class="${c.kind === "money" ? "num-col money" : ""}">${cellHtml(c, c.value(row, state.lookups))}</td>`).join("")}</tr>`).join("");
-  const totalW = cols.reduce((s, c) => s + c.w, 0);
+  const totalW = cols.reduce((sum, c) => sum + c.w, 0);
   $("#table").innerHTML = `<table><colgroup>${cols.map((c) => `<col style="width:${(c.w / totalW) * 100}%">`).join("")}</colgroup><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
-  $("#table-caption").textContent = rows.length > TABLE_LIMIT
-    ? `Showing the first ${fmtCount(TABLE_LIMIT)} of ${fmtCount(rows.length)} ${label}. Click a row to see the raw record. Everything else is in the folder.`
-    : `Showing all ${fmtCount(rows.length)} ${label}. Click a row to see the raw record.`;
+  $("#table-caption").textContent = total > shown.length
+    ? `Showing the first ${fmtCount(shown.length)} of ${fmtCount(total)} ${label}. Click a row to see the raw record. Everything is in the folder.`
+    : `Showing all ${fmtCount(total)} ${label}. Click a row to see the raw record.`;
 }
 $("#table").addEventListener("click", (e) => {
   const tr = e.target.closest("tbody tr");
@@ -937,38 +1218,37 @@ async function revealFolder() {
 // ---------- drawer ----------
 let lastFocus = null;
 function openDrawer(i, tr) {
-  const name = state.resource, row = state.result.resources[name][i], cols = state.cols, l = state.lookups;
+  const s = src(), name = state.resource, row = state.result.resources[name][i], cols = state.cols, l = state.lookups;
+  const def = s.resources[name];
   document.querySelectorAll("tbody tr.selected").forEach((x) => x.classList.remove("selected"));
   tr.classList.add("selected");
   lastFocus = tr;
 
   const val = (c) => c.value(row, l);
+  const rowId = row[def?.idField || "id"];
   const nameCol = cols.find((c) => c.kind === "name");
-  const title = (nameCol && val(nameCol)) || row.id || RESOURCE[name]?.one || "Record";
-  const secondary = cols.find((c) => c !== nameCol && ["mono", ""].includes(c.kind || "") && val(c) != null);
+  const title = (nameCol && val(nameCol)) || rowId || def?.one || "Record";
+  const secondary = cols.find((c) => c !== nameCol && !c.isId && ["mono", ""].includes(c.kind || "") && val(c) != null);
   const moneyCol = cols.find((c) => c.kind === "money" && val(c) != null);
   const statusCol = cols.find((c) => c.kind === "status" && val(c) != null);
   const dateCols = cols.filter((c) => c.kind === "date" && val(c) != null);
   const metaDate = dateCols[dateCols.length - 1];
-  const amount = moneyCol && (() => { const v = val(moneyCol); return v && typeof v === "object" && "major" in v ? money(v.major, v.currency) : money(v); })();
+  const amount = moneyCol && money(val(moneyCol));
 
-  const details = cols.filter((c) => c !== nameCol && c !== moneyCol && c !== statusCol && val(c) != null)
+  const details = cols.filter((c) => c !== nameCol && c !== moneyCol && c !== statusCol && !c.isId && val(c) != null)
     .map((c) => {
       const v = val(c);
-      const text = c.kind === "date" ? fmtLongDate(v) || v : c.kind === "enum" ? humanize(v) : typeof v === "object" ? JSON.stringify(v) : v;
+      const text = c.kind === "date" ? fmtLongDate(v) || v : c.kind === "enum" ? humanize(v) : c.kind === "money" ? money(v)?.text || "" : typeof v === "object" ? JSON.stringify(v) : v;
       return `<div><dt>${esc(c.label)}</dt><dd class="${c.kind === "mono" ? "mono" : ""}">${esc(text)}</dd></div>`;
     });
-  if (row.id && !cols.some((c) => c.label === "Ramp ID")) {
-    details.push(`<div><dt>Ramp ID</dt><dd class="mono" title="${esc(row.id)}">${esc(row.id)}</dd></div>`);
-  }
-  const file = `${name}.jsonl`;
+  if (rowId != null) details.push(`<div><dt>${esc(s.label)} ID</dt><dd class="mono" title="${esc(rowId)}">${esc(rowId)}</dd></div>`);
   const json = JSON.stringify(row, null, 2);
 
   $("#drawer-panel").innerHTML = `
     <div class="panel-head">
       <div class="avatar">${esc(String(title).trim()[0]?.toUpperCase() || "?")}</div>
       <div class="name" id="drawer-name">${esc(title)}</div>
-      <div>${esc(RESOURCE[name]?.one || "Record")}${secondary ? ` · ${esc(secondary.label === "Invoice" ? `Invoice ${val(secondary)}` : val(secondary))}` : ""}</div>
+      <div>${esc(def?.one || "Record")}${secondary ? ` · ${esc(secondary.label === "Invoice" ? `Invoice ${val(secondary)}` : val(secondary))}` : ""}</div>
       ${amount ? `<div class="amount">${esc(amount.text)} <small>${esc(amount.code)}</small></div>` : ""}
       ${statusCol ? `<div class="status-card"><span class="tag lg ${tone(val(statusCol))}">${esc(humanize(val(statusCol)))}</span>${
         metaDate ? `<span>${esc(metaDate.label)} ${esc(fmtLongDate(val(metaDate)) || "")}</span>` : ""}</div>` : ""}
@@ -978,7 +1258,7 @@ function openDrawer(i, tr) {
       <div>
         <div class="raw-head"><span class="overline">Raw record</span>
           <button class="btn outline xs" type="button" id="copy-json">${ICON.copy}<span>Copy JSON</span></button></div>
-        <div class="caption subtle" style="margin-top:8px">${esc(file)} · line ${fmtCount(i + 1)}</div>
+        <div class="caption subtle" style="margin-top:8px">${esc(name)}.jsonl · line ${fmtCount(i + 1)}</div>
         <pre class="json">${esc(json)}</pre>
       </div>
     </div>`;
@@ -995,10 +1275,21 @@ $("#drawer").addEventListener("click", (e) => { if (e.target.closest("[data-clos
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#drawer").hidden) closeDrawer(); });
 
 // ---------- boot ----------
-renderScopes([]);
-renderChoices();
-$("#history-hint").textContent = HISTORY_HINT.all;
-goTo("connect");
+async function boot() {
+  goTo("platform");
+  try {
+    const res = await fetch("/api/sources");
+    state.sources = (await res.json()).sources;
+  } catch {
+    showError($("#platform-error"), { network: true });
+    return;
+  }
+  const wanted = new URLSearchParams(location.search).get("source");
+  if (state.sources.some((s) => s.id === wanted)) state.pickedId = wanted;
+  renderPlatforms();
+  renderFooter();
+}
+boot();
 </script>
 </body>
 </html>
