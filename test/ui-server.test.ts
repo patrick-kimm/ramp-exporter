@@ -49,6 +49,23 @@ describe("ui server", () => {
     }
   });
 
+  test("GET /logos/:id.svg serves a bundled logo for every platform", async () => {
+    const ui = startUiServer({ port: 0 });
+    try {
+      for (const id of ["ramp", "mercury", "brex", "rho"]) {
+        const res = await fetch(`${ui.url}/logos/${id}.svg`);
+        expect(res.status).toBe(200);
+        expect(res.headers.get("content-type")).toBe("image/svg+xml");
+        expect(await res.text()).toStartWith("<svg");
+      }
+      for (const path of ["/logos/nope.svg", "/logos/..%2Fserver.ts", "/logos/ramp.png"]) {
+        expect((await fetch(`${ui.url}${path}`)).status).toBe(404);
+      }
+    } finally {
+      ui.stop();
+    }
+  });
+
   test("POST /api/export (Ramp, legacy body) runs the export and returns a preview", async () => {
     const mock = startMockRamp({
       resources: {

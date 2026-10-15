@@ -1,6 +1,5 @@
 import { stat } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { parseConfig, type Config } from "../config";
 import { createClient, runExport, unknownCategories, type ExportProgress } from "../export";
 import type { ResourceMeta } from "../manifest";
@@ -8,6 +7,11 @@ import { SourceClient, SourceError, type SourceErrorKind } from "../sources/clie
 import { checkAccess, dateRangeProblem } from "../sources/fetch";
 import { SOURCES, SOURCE_IDS, getSource, isSourceId } from "../sources";
 import { scopesFor, type Credentials, type SourceDef, type SourceId } from "../sources/types";
+import indexHtml from "./index.html" with { type: "file" };
+import brexLogo from "./logos/brex.svg" with { type: "file" };
+import mercuryLogo from "./logos/mercury.svg" with { type: "file" };
+import rampLogo from "./logos/ramp.svg" with { type: "file" };
+import rhoLogo from "./logos/rho.svg" with { type: "file" };
 
 const NDJSON = "application/x-ndjson";
 /** Records per resource sent back for the review screen; the files on disk have everything. */
@@ -43,7 +47,11 @@ interface ErrorBody {
   missingScopes?: string[];
 }
 
-const HTML_PATH = fileURLToPath(new URL("./index.html", import.meta.url));
+// bun-types declares *.html as an HTMLBundle; a `type: "file"` import is the embedded file's path.
+const HTML_PATH = indexHtml as unknown as string;
+/** File imports so `bun build --compile` embeds the page and logos in the binary; it works offline. */
+const LOGOS: Record<SourceId, string> = { ramp: rampLogo, mercury: mercuryLogo, brex: brexLogo, rho: rhoLogo };
+const LOGO_ROUTE = /^\/logos\/([a-z]+)\.svg$/;
 
 export function startUiServer(opts: UiServerOptions = {}) {
   const outputPath = resolve(opts.outputPath ?? "./exports");
@@ -102,6 +110,12 @@ async function route(req: Request, ctx: Ctx): Promise<Response> {
   if (req.method === "GET" && url.pathname === "/") {
     return new Response(Bun.file(HTML_PATH), { headers: { "content-type": "text/html; charset=utf-8" } });
   }
+  const logo = req.method === "GET" ? LOGO_ROUTE.exec(url.pathname)?.[1] : undefined;
+  if (logo && isSourceId(logo)) {
+    return new Response(Bun.file(LOGOS[logo]), {
+      headers: { "content-type": "image/svg+xml", "cache-control": "public, max-age=86400" },
+    });
+  }
   if (req.method === "GET" && url.pathname === "/api/sources") return json({ sources: SOURCE_IDS.map((id) => publicSource(SOURCES[id])) });
   if (req.method === "POST" && url.pathname === "/api/connect") return handleConnect(req, ctx);
   if (req.method === "POST" && url.pathname === "/api/export") return handleExport(req, ctx);
@@ -114,7 +128,6 @@ function publicSource(s: SourceDef) {
   return {
     id: s.id,
     label: s.label,
-    tagline: s.tagline,
     credentials: s.credentials,
     setup: s.setup,
     scopes: scopesFor(s),

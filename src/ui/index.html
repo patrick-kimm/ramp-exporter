@@ -226,7 +226,13 @@
   .skip-list { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 0; padding: 0 0 0 16px; color: var(--color-text-normal); }
   .skip-list b { font-weight: 525; color: var(--color-text-prominent); }
   .skip-list .scope { margin-left: 4px; }
-  .letter-tile { font-size: 18px; font-weight: 650; color: var(--color-text-prominent); }
+  .choices.platforms { gap: 8px; }
+  .choice.platform { height: 56px; padding: 0 16px 0 12px; gap: 12px; border-color: var(--color-border-subtle); background: var(--color-surface-neutral); }
+  .choice.platform[aria-checked="true"] { border-color: var(--color-accent-border); background: var(--color-surface-subtle); }
+  .choice.platform:hover { border-color: var(--color-border-prominent); }
+  .choice.platform[aria-checked="true"]:hover { border-color: var(--color-accent-bold); }
+  .choice.platform .logo { width: 32px; height: 32px; flex-shrink: 0; border-radius: 8px; outline: 1px solid rgba(21, 20, 15, .075); outline-offset: -1px; }
+  .choice.platform .label { flex: 1; font-weight: 525; }
   .choice[aria-disabled="true"] { opacity: .55; cursor: not-allowed; }
   .choice[aria-disabled="true"]:hover { border-color: var(--color-border-normal); }
   .choice-warn { display: block; margin-top: 2px; color: var(--color-warning-text); }
@@ -268,8 +274,8 @@
           <!-- 1 · Platform -->
           <div class="fields" id="pane-platform">
             <div class="alert" id="platform-error" role="alert" hidden></div>
-            <p style="margin:0">Pick the platform you’re leaving. The export runs on this computer, reads everything it can, and saves it to a folder you can bring to Slash.</p>
-            <div class="choices" id="platforms" role="radiogroup" aria-label="Platform"></div>
+            <p style="margin:0">Pick the platform you’re leaving. The export runs on this computer and saves everything to a folder you can bring to Slash.</p>
+            <div class="choices platforms" id="platforms" role="radiogroup" aria-label="Platform"></div>
           </div>
 
           <!-- 2 · Connect -->
@@ -636,9 +642,9 @@ function clearConnectError() {
 // ---------- 1 · platform ----------
 function renderPlatforms() {
   $("#platforms").innerHTML = state.sources.map((s) => `
-    <button class="choice" type="button" role="radio" aria-checked="${s.id === state.pickedId}" data-source="${s.id}">
-      <span class="tile letter-tile">${esc(s.label[0])}</span>
-      <span class="text"><span class="label">${esc(s.label)}</span><span>${esc(s.tagline)}</span></span>
+    <button class="choice platform" type="button" role="radio" aria-checked="${s.id === state.pickedId}" data-source="${s.id}">
+      <img class="logo" src="/logos/${esc(s.id)}.svg" alt="" width="32" height="32" />
+      <span class="label">${esc(s.label)}</span>
       <span class="radio" aria-hidden="true"></span>
     </button>`).join("");
 }
